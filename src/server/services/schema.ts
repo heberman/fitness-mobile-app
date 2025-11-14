@@ -1,0 +1,95 @@
+// db/schema.js
+import * as SQLite from "expo-sqlite";
+
+export const initDatabase = async () => {
+  const db = await SQLite.openDatabaseAsync("fitness_app.db");
+
+  await db.execAsync(`
+    -- Temp code to clear local
+    DROP TABLE IF EXISTS daily_summaries;
+    DROP TABLE IF EXISTS water_consumption;
+    DROP TABLE IF EXISTS sleep;
+    DROP TABLE IF EXISTS meals;
+    DROP TABLE IF EXISTS workouts;
+    DROP TABLE IF EXISTS today_stats;
+    DROP TABLE IF EXISTS sync_queue;
+
+    -- User profile table
+    CREATE TABLE IF NOT EXISTS user_profile (
+      id TEXT PRIMARY KEY,
+      experience_points INTEGER DEFAULT 0,
+      level INTEGER DEFAULT 1,
+      last_synced TEXT,
+      needs_sync INTEGER DEFAULT 0,
+      updated_at TEXT
+    );
+    
+    -- Water consumption (historical)
+    CREATE TABLE IF NOT EXISTS water_consumption (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      water_ml INTEGER DEFAULT 0,
+      needs_sync INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, date)
+    );
+
+    -- Sleep (historical)
+    CREATE TABLE IF NOT EXISTS sleep (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      sleep_minutes INTEGER DEFAULT 0,
+      needs_sync INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, date)
+    );
+    
+    -- Today's meals
+    CREATE TABLE IF NOT EXISTS meals (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      calories INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      logged_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      needs_sync INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Today's workouts
+    CREATE TABLE IF NOT EXISTS workouts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      calories_burned INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      completed_at TEXT NOT NULL,
+      needs_sync INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Sync queue
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      table_name TEXT NOT NULL,
+      action TEXT NOT NULL,
+      data TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Indexes
+    CREATE INDEX IF NOT EXISTS idx_water_consumption_user_date 
+      ON water_consumption(user_id, date DESC);
+    CREATE INDEX IF NOT EXISTS idx_sleep_user_date 
+      ON sleep(user_id, date DESC);
+    CREATE INDEX IF NOT EXISTS idx_meals_user_date 
+      ON meals(user_id, date DESC);
+    CREATE INDEX IF NOT EXISTS idx_workouts_user_date 
+      ON workouts(user_id, date DESC);
+  `);
+
+  return db;
+};

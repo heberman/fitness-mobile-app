@@ -1,0 +1,298 @@
+import React, { useState, useCallback } from "react";
+import {
+  StyleSheet,
+  View,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import ThemedView from "../../components/ThemedView";
+import ThemedText from "../../components/ThemedText";
+import ThemedCard from "../../components/ThemedCard";
+import { useProfile } from "../../hooks/useProfile";
+import { getXPForNextLevel } from "../../utils/levels";
+import ThemedButton from "../../components/ThemedButton";
+import { useDailyTracking } from "../../hooks/useDailyTracking";
+import { Colors } from "../../constants/Colors";
+
+// Import the individual logging forms
+import LogMealForm from "./LogMealForm";
+import LogWorkoutForm from "./LogWorkoutForm";
+import LogWaterForm from "./LogWaterForm";
+import LogSleepForm from "./LogSleepForm";
+import ThemedScrollView from "../../components/ThemedScrollView";
+
+// Enum to manage the visibility of logging forms
+export enum LoggingFormType {
+  None = "None",
+  Meal = "Meal",
+  Workout = "Workout",
+  Water = "Water",
+  Sleep = "Sleep",
+}
+
+export default function Dashboard() {
+  const { profile, loading: profileLoading } = useProfile();
+  const {
+    todayData,
+    logMeal,
+    logWorkout,
+    addWater,
+    addSleep,
+    refreshTodayData,
+  } = useDailyTracking();
+
+  // State to manage which logging form is visible
+  const [currentLoggingForm, setCurrentLoggingForm] = useState<LoggingFormType>(
+    LoggingFormType.None
+  );
+
+  // Helper to close all logging forms
+  const closeLoggingForm = useCallback(() => {
+    setCurrentLoggingForm(LoggingFormType.None);
+  }, []);
+
+  // Handlers for button presses to open specific forms
+  const handleLogMealPress = useCallback(() => {
+    setCurrentLoggingForm(LoggingFormType.Meal);
+  }, []);
+
+  const handleLogWorkoutPress = useCallback(() => {
+    setCurrentLoggingForm(LoggingFormType.Workout);
+  }, []);
+
+  const handleLogWaterPress = useCallback(() => {
+    setCurrentLoggingForm(LoggingFormType.Water);
+  }, []);
+
+  const handleLogSleepPress = useCallback(() => {
+    setCurrentLoggingForm(LoggingFormType.Sleep);
+  }, []);
+
+  // Handlers for submitting data from the logging forms
+  const handleLogMealSubmit = async (name: string, calories: number) => {
+    try {
+      await logMeal(name, calories);
+      closeLoggingForm();
+      await refreshTodayData(); // Refresh data to show updated totals
+    } catch (error) {
+      console.error("Error logging meal:", error);
+      Alert.alert("Error", "Failed to log meal. Please try again.");
+    }
+  };
+
+  const handleLogWorkoutSubmit = async (caloriesBurned: number) => {
+    try {
+      await logWorkout(caloriesBurned);
+      closeLoggingForm();
+      await refreshTodayData();
+    } catch (error) {
+      console.error("Error logging workout:", error);
+      Alert.alert("Error", "Failed to log workout. Please try again.");
+    }
+  };
+
+  const handleLogWaterSubmit = async (ml: number) => {
+    try {
+      await addWater(ml);
+      closeLoggingForm();
+      await refreshTodayData();
+    } catch (error) {
+      console.error("Error logging water:", error);
+      Alert.alert("Error", "Failed to log water. Please try again.");
+    }
+  };
+
+  const handleLogSleepSubmit = async (minutes: number) => {
+    try {
+      await addSleep(minutes);
+      closeLoggingForm();
+      await refreshTodayData();
+    } catch (error) {
+      console.error("Error logging sleep:", error);
+      Alert.alert("Error", "Failed to log sleep. Please try again.");
+    }
+  };
+
+  // Show loading indicator if profile or todayData is not yet loaded
+  if (profileLoading || !profile || !todayData) {
+    return (
+      <ThemedView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </ThemedView>
+    );
+  }
+
+  return (
+    <ThemedScrollView style={{}}>
+      <ThemedView style={styles.container} safe>
+        <ThemedText title style={styles.appName}>
+          FitGenie
+        </ThemedText>
+        <ThemedCard style={styles.levelCard}>
+          <ThemedText
+            title
+            style={styles.levelText}
+          >{`Level ${profile.level}`}</ThemedText>
+          <View>
+            <ThemedText style={{}}>{`XP earned today: 0`}</ThemedText>
+            <ThemedText style={{}}>{`XP needed for next level: ${
+              getXPForNextLevel(profile.level) - profile.experience_points
+            }`}</ThemedText>
+          </View>
+        </ThemedCard>
+
+        {/* Stats for the day */}
+        <ThemedCard style={styles.statsCard}>
+          <View style={styles.stat}>
+            <ThemedText
+              title
+              style={{ ...styles.statNumberText, color: "lightgreen" }}
+            >
+              {todayData.calories_consumed}
+            </ThemedText>
+            <ThemedText style={{}}>Calories consumed</ThemedText>
+          </View>
+          <View style={styles.stat}>
+            <ThemedText
+              title
+              style={{ ...styles.statNumberText, color: "lightcoral" }}
+            >
+              {todayData.calories_burned}
+            </ThemedText>
+            <ThemedText style={{}}>Calories burned</ThemedText>
+          </View>
+          <View style={styles.stat}>
+            <ThemedText
+              title
+              style={{ ...styles.statNumberText, color: "lightblue" }}
+            >
+              {`${todayData.water_ml} mL`}
+            </ThemedText>
+            <ThemedText style={{}}>Water consumed</ThemedText>
+          </View>
+          <View style={styles.stat}>
+            <ThemedText
+              title
+              style={{ ...styles.statNumberText, color: "plum" }}
+            >
+              {Math.round((todayData.sleep_minutes / 60) * 10) / 10}
+            </ThemedText>
+            <ThemedText style={{}}>Hours of sleep</ThemedText>
+          </View>
+        </ThemedCard>
+
+        <View style={styles.buttonGroup}>
+          {/* Meal and Workout Buttons */}
+          <View style={styles.buttonRow}>
+            <ThemedButton onPress={handleLogMealPress} style={styles.logButton}>
+              <ThemedText style={styles.logButtonText}>Log Meal</ThemedText>
+            </ThemedButton>
+            <ThemedButton
+              onPress={handleLogWorkoutPress}
+              style={styles.logButton}
+            >
+              <ThemedText style={styles.logButtonText}>Log Workout</ThemedText>
+            </ThemedButton>
+          </View>
+          {/* Water and Sleep Buttons */}
+          <View style={styles.buttonRow}>
+            <ThemedButton
+              onPress={handleLogWaterPress}
+              style={styles.logButton}
+            >
+              <ThemedText style={styles.logButtonText}>Log Water</ThemedText>
+            </ThemedButton>
+            <ThemedButton
+              onPress={handleLogSleepPress}
+              style={styles.logButton}
+            >
+              <ThemedText style={styles.logButtonText}>Log Sleep</ThemedText>
+            </ThemedButton>
+          </View>
+        </View>
+
+        {/* Conditionally render Meal Log Form */}
+        {currentLoggingForm === LoggingFormType.Meal && (
+          <LogMealForm
+            onSubmit={handleLogMealSubmit}
+            onCancel={closeLoggingForm}
+          />
+        )}
+        {/* Conditionally render Workout Log Form */}
+        {currentLoggingForm === LoggingFormType.Workout && (
+          <LogWorkoutForm
+            onSubmit={handleLogWorkoutSubmit}
+            onCancel={closeLoggingForm}
+          />
+        )}
+        {/* Conditionally render Water Log Form */}
+        {currentLoggingForm === LoggingFormType.Water && (
+          <LogWaterForm
+            onSubmit={handleLogWaterSubmit}
+            onCancel={closeLoggingForm}
+          />
+        )}
+        {/* Conditionally render Sleep Log Form */}
+        {currentLoggingForm === LoggingFormType.Sleep && (
+          <LogSleepForm
+            onSubmit={handleLogSleepSubmit}
+            onCancel={closeLoggingForm}
+          />
+        )}
+      </ThemedView>
+    </ThemedScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    gap: 24,
+  },
+  appName: {
+    fontSize: 48,
+    fontWeight: "bold",
+    color: Colors.primary,
+  },
+  levelCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  levelText: {
+    fontSize: 36,
+    fontWeight: "bold",
+  },
+  statsCard: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    flexWrap: "wrap",
+    rowGap: 16,
+  },
+  stat: {
+    width: "50%",
+    alignItems: "center",
+  },
+  statNumberText: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  buttonGroup: {
+    gap: 16,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  logButton: {
+    flex: 1,
+    alignItems: "center",
+  },
+  logButtonText: {
+    fontSize: 16,
+  },
+});
