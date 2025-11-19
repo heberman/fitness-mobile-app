@@ -7,7 +7,11 @@ import React, {
 } from "react";
 import { dailyTrackingService } from "../server/services/dailyTracking";
 import { useUser } from "../hooks/useUser";
-import type { TodayProgress } from "../types/localstore.types";
+import type {
+  TodayMeal,
+  TodayProgress,
+  TodayWorkout,
+} from "../types/localstore.types";
 import { useProfile } from "../hooks/useProfile";
 import {
   XP_CALORIE_BURNED,
@@ -15,6 +19,7 @@ import {
   XP_MEAL_LOGGED,
   XP_MINUTE_SLEEP,
 } from "../constants/XpValues";
+import * as ExpoCrypto from "expo-crypto";
 
 export type DailyTrackingContextType = {
   // Today's data
@@ -80,26 +85,30 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
         throw new Error("No user or data available");
       }
 
+      const newMeal: TodayMeal = {
+        id: ExpoCrypto.randomUUID(),
+        name,
+        calories,
+      };
+
+      awardXP(XP_MEAL_LOGGED);
+
+      setTodayProgress((prev) => {
+        if (!prev) return prev;
+
+        const newMeals = [...prev.meals, newMeal];
+        const newCaloriesConsumed = prev.caloriesConsumed + calories;
+
+        return {
+          ...prev,
+          meals: newMeals,
+          caloriesConsumed: newCaloriesConsumed,
+          xpGained: prev.xpGained + XP_MEAL_LOGGED,
+        };
+      });
+
       try {
-        const newMeal = await dailyTrackingService.logMeal(
-          user.id,
-          name,
-          calories
-        );
-
-        awardXP(XP_MEAL_LOGGED);
-
-        setTodayProgress((prev) => {
-          if (!prev) return prev;
-          const newMeals = [...prev.meals, newMeal];
-          const newCaloriesConsumed = prev.caloriesConsumed + calories;
-
-          return {
-            ...prev,
-            meals: newMeals,
-            caloriesConsumed: newCaloriesConsumed,
-          };
-        });
+        await dailyTrackingService.logMeal(user.id, newMeal);
       } catch (err) {
         console.error("Failed to log meal:", err);
         // Reload to get accurate state
@@ -116,25 +125,30 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
         throw new Error("No user or data available");
       }
 
+      const newWorkout: TodayWorkout = {
+        id: ExpoCrypto.randomUUID(),
+        caloriesBurned,
+      };
+
+      const xpGained = XP_CALORIE_BURNED * caloriesBurned;
+
+      awardXP(xpGained);
+
+      setTodayProgress((prev) => {
+        if (!prev) return prev;
+        const newWorkouts = [...prev.workouts, newWorkout];
+        const newCaloriesBurned = prev.caloriesBurned + caloriesBurned;
+
+        return {
+          ...prev,
+          workouts: newWorkouts,
+          caloriesBurned: newCaloriesBurned,
+          xpGained: prev.xpGained + xpGained,
+        };
+      });
+
       try {
-        const newWorkout = await dailyTrackingService.logWorkout(
-          user.id,
-          caloriesBurned
-        );
-
-        awardXP(XP_CALORIE_BURNED * caloriesBurned);
-
-        setTodayProgress((prev) => {
-          if (!prev) return prev;
-          const newWorkouts = [...prev.workouts, newWorkout];
-          const newCaloriesBurned = prev.caloriesBurned + caloriesBurned;
-
-          return {
-            ...prev,
-            workouts: newWorkouts,
-            caloriesBurned: newCaloriesBurned,
-          };
-        });
+        await dailyTrackingService.logWorkout(user.id, newWorkout);
       } catch (err) {
         console.error("Failed to log workout:", err);
         await loadTodayData();
@@ -149,19 +163,20 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
       throw new Error("No user or data available");
     }
 
+    awardXP(XP_GLASS_WATER);
+
+    setTodayProgress((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        waterGlasses: prev.waterGlasses + 1,
+        xpGained: prev.xpGained + XP_GLASS_WATER,
+      };
+    });
+
     try {
       await dailyTrackingService.addWater(user.id);
-
-      awardXP(XP_GLASS_WATER);
-
-      setTodayProgress((prev) => {
-        if (!prev) return prev;
-
-        return {
-          ...prev,
-          waterGlasses: prev.waterGlasses + 1,
-        };
-      });
     } catch (err) {
       console.error("Failed to add water:", err);
       await loadTodayData();
@@ -175,19 +190,22 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
         throw new Error("No user or data available");
       }
 
+      const xpGained = minutes * XP_MINUTE_SLEEP;
+
+      awardXP(xpGained);
+
+      setTodayProgress((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          sleepMinutes: prev.sleepMinutes + minutes,
+          xpGained: prev.xpGained + xpGained,
+        };
+      });
+
       try {
         await dailyTrackingService.addSleep(user.id, minutes);
-
-        awardXP(minutes * XP_MINUTE_SLEEP);
-
-        setTodayProgress((prev) => {
-          if (!prev) return prev;
-
-          return {
-            ...prev,
-            sleepMinutes: prev.sleepMinutes + minutes,
-          };
-        });
       } catch (err) {
         console.error("Failed to add sleep:", err);
         await loadTodayData();

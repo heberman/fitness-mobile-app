@@ -76,9 +76,8 @@ export default function Dashboard() {
   // Handlers for submitting data from the logging forms
   const handleLogMealSubmit = async (name: string, calories: number) => {
     try {
-      await logMeal(name, calories);
       closeLoggingForm();
-      await refreshTodayData(); // Refresh data to show updated totals
+      await logMeal(name, calories);
     } catch (error) {
       console.error("Error logging meal:", error);
       Alert.alert("Error", "Failed to log meal. Please try again.");
@@ -87,9 +86,8 @@ export default function Dashboard() {
 
   const handleLogWorkoutSubmit = async (caloriesBurned: number) => {
     try {
-      await logWorkout(caloriesBurned);
       closeLoggingForm();
-      await refreshTodayData();
+      await logWorkout(caloriesBurned);
     } catch (error) {
       console.error("Error logging workout:", error);
       Alert.alert("Error", "Failed to log workout. Please try again.");
@@ -99,8 +97,6 @@ export default function Dashboard() {
   const handleLogWaterSubmit = async () => {
     try {
       await addWater();
-      closeLoggingForm();
-      await refreshTodayData();
     } catch (error) {
       console.error("Error logging water:", error);
       Alert.alert("Error", "Failed to log water. Please try again.");
@@ -109,9 +105,8 @@ export default function Dashboard() {
 
   const handleLogSleepSubmit = async (minutes: number) => {
     try {
-      await addSleep(minutes);
       closeLoggingForm();
-      await refreshTodayData();
+      await addSleep(minutes);
     } catch (error) {
       console.error("Error logging sleep:", error);
       Alert.alert("Error", "Failed to log sleep. Please try again.");

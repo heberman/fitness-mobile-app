@@ -7,16 +7,18 @@ import type {
   Workout,
   TodayData,
   TodayProgress,
+  TodayMeal,
+  TodayWorkout,
 } from "../../types/localstore.types";
 // Import the sync service
 import { syncService } from "./sync";
-import * as ExpoCrypto from "expo-crypto";
 import {
   XP_CALORIE_BURNED,
   XP_GLASS_WATER,
   XP_MEAL_LOGGED,
   XP_MINUTE_SLEEP,
 } from "../../constants/XpValues";
+import * as ExpoCrypto from "expo-crypto";
 
 class DailyTrackingService {
   private db: SQLite.SQLiteDatabase | null = null;
@@ -35,17 +37,14 @@ class DailyTrackingService {
     return new Date().toISOString().split("T")[0];
   }
 
-  async logMeal(userId: string, name: string, calories: number): Promise<Meal> {
+  async logMeal(userId: string, newMeal: TodayMeal): Promise<Meal> {
     const db = this.getDb();
     const today = this.getTodayDate();
     const now = new Date().toISOString(); // Added for created_at and logged_at
-    const id = ExpoCrypto.randomUUID();
 
     const meal: Meal = {
-      id,
+      ...newMeal,
       user_id: userId,
-      name,
-      calories,
       date: today,
       logged_at: now,
       created_at: now,
@@ -54,7 +53,16 @@ class DailyTrackingService {
     await db.runAsync(
       `INSERT INTO meals (id, user_id, name, calories, date, logged_at, created_at, needs_sync)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, name, calories, today, meal.logged_at, meal.created_at, 1] // All values now correctly mapped
+      [
+        newMeal.id,
+        userId,
+        newMeal.name,
+        newMeal.calories,
+        today,
+        meal.logged_at,
+        meal.created_at,
+        1,
+      ] // All values now correctly mapped
     );
 
     // Add to sync queue and attempt sync
@@ -74,11 +82,13 @@ class DailyTrackingService {
     );
   }
 
-  async logWorkout(userId: string, caloriesBurned: number): Promise<Workout> {
+  async logWorkout(
+    userId: string,
+    { id, caloriesBurned }: TodayWorkout
+  ): Promise<Workout> {
     const db = this.getDb();
     const today = this.getTodayDate();
     const now = new Date().toISOString();
-    const id = ExpoCrypto.randomUUID();
 
     const workout: Workout = {
       id,
@@ -366,7 +376,10 @@ class DailyTrackingService {
 
     const todayData: TodayData = {
       meals,
-      workouts,
+      workouts: workouts.map((w) => ({
+        ...w,
+        caloriesBurned: w.calories_burned,
+      })),
       caloriesConsumed: meals.reduce((sum, m) => sum + m.calories, 0),
       caloriesBurned: workouts.reduce((sum, w) => sum + w.calories_burned, 0),
       waterGlasses: water?.glasses ?? 0,

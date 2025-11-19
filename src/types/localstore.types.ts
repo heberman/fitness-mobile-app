@@ -45,9 +45,15 @@ export type Workout = DbWorkout & {
   needs_sync?: number;
 };
 
+export type TodayMeal = Pick<Meal, "id" | "name" | "calories">;
+export type TodayWorkout = {
+  id: string;
+  caloriesBurned: number;
+};
+
 export type TodayData = {
-  meals: Meal[];
-  workouts: Workout[];
+  meals: TodayMeal[];
+  workouts: TodayWorkout[];
   caloriesConsumed: number;
   caloriesBurned: number;
   waterGlasses: number;
