@@ -84,7 +84,7 @@ function RootLayoutNav() {
   }
 
   // Show loading while initializing or checking auth
-  if (loading || !dbReady || !hasInitialSynced) {
+  if (loading || !dbReady) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
@@ -93,14 +93,14 @@ function RootLayoutNav() {
   }
 
   return (
-    <DailyTrackingProvider>
-      <ProfileProvider>
+    <ProfileProvider>
+      <DailyTrackingProvider>
         <View style={{ flex: 1 }}>
           <StatusBar />
           <Slot />
         </View>
-      </ProfileProvider>
-    </DailyTrackingProvider>
+      </DailyTrackingProvider>
+    </ProfileProvider>
   );
 }
 

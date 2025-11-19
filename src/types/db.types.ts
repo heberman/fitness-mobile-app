@@ -50,7 +50,6 @@ export type Database = {
           experience_points: number | null
           id: string
           last_synced: string | null
-          level: number | null
           updated_at: string | null
         }
         Insert: {
@@ -58,7 +57,6 @@ export type Database = {
           experience_points?: number | null
           id: string
           last_synced?: string | null
-          level?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -66,7 +64,6 @@ export type Database = {
           experience_points?: number | null
           id?: string
           last_synced?: string | null
-          level?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -102,26 +99,26 @@ export type Database = {
         Row: {
           created_at: string | null
           date: string
+          glasses: number | null
           id: string
           updated_at: string | null
           user_id: string
-          water_ml: number | null
         }
         Insert: {
           created_at?: string | null
           date: string
+          glasses?: number | null
           id?: string
           updated_at?: string | null
           user_id: string
-          water_ml?: number | null
         }
         Update: {
           created_at?: string | null
           date?: string
+          glasses?: number | null
           id?: string
           updated_at?: string | null
           user_id?: string
-          water_ml?: number | null
         }
         Relationships: []
       }

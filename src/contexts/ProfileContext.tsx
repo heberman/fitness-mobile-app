@@ -15,7 +15,7 @@ type ProfileContextType = {
   profile: UserProfile | null;
   loading: boolean;
   error: Error | null;
-  awardXP: (xpAmount: number) => Promise<number | undefined>;
+  awardXp: (xpAmount: number) => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
 
@@ -25,7 +25,6 @@ export const ProfileContext = createContext<ProfileContextType | undefined>(
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
-  const dailyTracking = useDailyTracking();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -56,32 +55,24 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   // Award XP with optimistic update
-  const awardXP = useCallback(
-    async (xpAmount: number): Promise<number | undefined> => {
+  const awardXp = useCallback(
+    async (xpAmount: number): Promise<void> => {
       if (!user?.id || !profile) {
         throw new Error("No user or profile available");
       }
 
       const newXP = profile.experience_points + xpAmount;
-      const newLevel = calculateLevel(newXP);
-      const didLevelUp = newLevel > profile.level;
 
       // Optimistic update - update UI immediately
       const updatedProfile = {
         ...profile,
         experience_points: newXP,
-        level: newLevel,
       };
       setProfile(updatedProfile);
 
       try {
-        // Update database (local + queue for sync)
-        await syncService.updateLocalProfile(user.id, {
-          experience_points: newXP,
-          level: newLevel,
-        });
-
-        return didLevelUp ? newLevel : undefined;
+        // Update local
+        await syncService.updateLocalProfile(user.id, newXP);
       } catch (err) {
         // Rollback on error
         console.error("Failed to award XP:", err);
@@ -89,7 +80,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    [user?.id, profile, dailyTracking]
+    [user?.id, profile]
   );
 
   // Refresh profile from local DB
@@ -110,7 +101,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         error,
-        awardXP,
+        awardXp,
         refreshProfile,
       }}
     >

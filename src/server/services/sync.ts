@@ -10,6 +10,7 @@ import type {
   Sleep,
 } from "../../types/localstore.types";
 import type { Meal, Workout } from "../../types/localstore.types";
+import { calculateLevel } from "../../utils/levels";
 
 class SyncService {
   private db: SQLite.SQLiteDatabase | null = null;
@@ -50,15 +51,9 @@ class SyncService {
         const db = this.getDb();
         await db.runAsync(
           `INSERT OR REPLACE INTO user_profile 
-           (id, experience_points, level, last_synced, needs_sync, updated_at)
-           VALUES (?, ?, ?, ?, 0, ?)`, // needs_sync is 0 because it's from Supabase
-          [
-            data.id,
-            data.experience_points,
-            data.level,
-            data.last_synced,
-            data.updated_at,
-          ]
+           (id, experience_points, last_synced, needs_sync, updated_at)
+           VALUES (?, ?, ?, 0, ?)`, // needs_sync is 0 because it's from Supabase
+          [data.id, data.experience_points, data.last_synced, data.updated_at]
         );
         console.log("Successfully updated local profile");
       }
@@ -73,14 +68,17 @@ class SyncService {
   /**
    * Get profile from local storage
    */
-  async getLocalProfile(userId: string): Promise<UserProfile | null> {
+  async getLocalProfile(userId: string): Promise<UserProfile> {
     try {
       const db = this.getDb();
       const result = await db.getFirstAsync<UserProfile>(
         "SELECT * FROM user_profile WHERE id = ?",
         [userId]
       );
-      return result || null;
+      if (!result) {
+        throw new Error(`Profile not found for user ${userId}`);
+      }
+      return result;
     } catch (error) {
       console.error("Error getting local profile:", error);
       throw error;
@@ -92,10 +90,10 @@ class SyncService {
    */
   async updateLocalProfile(
     userId: string,
-    updates: ProfileUpdate
+    newXp: number,
+    sync?: boolean
   ): Promise<void> {
     try {
-      const { experience_points, level } = updates;
       const db = this.getDb();
       const now = new Date().toISOString(); // For updated_at
 
@@ -106,19 +104,20 @@ class SyncService {
              needs_sync = 1,
              updated_at = ?
          WHERE id = ?`,
-        [experience_points, level, now, userId]
+        [newXp, 1, now, userId]
       );
 
-      // Queue for sync
-      await this.addToSyncQueue("profiles", "update", {
-        id: userId,
-        experience_points,
-        level,
-        updated_at: now, // Include updated_at for sync
-      });
+      if (sync) {
+        // Queue for sync
+        await this.addToSyncQueue("profiles", "update", {
+          id: userId,
+          experience_points: newXp,
+          updated_at: now, // Include updated_at for sync
+        });
 
-      // Try to sync immediately if online
-      this.syncToSupabase();
+        // Try to sync immediately if online
+        this.syncToSupabase(userId);
+      }
     } catch (error) {
       console.error("Error updating local profile:", error);
       throw error;
@@ -131,15 +130,16 @@ class SyncService {
   async addToSyncQueue(
     tableName: string,
     action: "update" | "insert" | "delete",
-    data: Record<string, any>
+    data: Record<string, any>,
+    xpGained?: number
   ): Promise<void> {
     try {
       const db = this.getDb();
 
       await db.runAsync(
-        `INSERT INTO sync_queue (table_name, action, data)
-         VALUES (?, ?, ?)`,
-        [tableName, action, JSON.stringify(data)]
+        `INSERT INTO sync_queue (table_name, action, data, xp_gained)
+         VALUES (?, ?, ?, ?)`,
+        [tableName, action, JSON.stringify(data), xpGained]
       );
       console.log(`Added to sync queue: ${tableName} - ${action}`);
     } catch (error) {
@@ -147,10 +147,23 @@ class SyncService {
     }
   }
 
+  async updateUserXp(userId: string, newXp: number) {
+    const now = new Date().toISOString();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        experience_points: newXp,
+        updated_at: now,
+      })
+      .eq("id", userId);
+    return error;
+  }
+
   /**
    * Sync local changes to Supabase
    */
-  async syncToSupabase(): Promise<void> {
+  async syncToSupabase(userId: string): Promise<void> {
     if (this.isSyncing) {
       console.log("Already syncing, skipping.");
       return;
@@ -177,6 +190,17 @@ class SyncService {
           ? "No syncs pending"
           : `Syncing ${pendingSyncs.length} changes`
       );
+
+      if (pendingSyncs.length === 0) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("experience_points")
+        .eq("id", userId)
+        .single();
+      let newXp = data.experience_points;
 
       for (const sync of pendingSyncs) {
         const data = JSON.parse(sync.data) as Record<string, any>;
@@ -265,7 +289,7 @@ class SyncService {
                 : await supabase
                     .from("water_consumption")
                     .update({
-                      water_ml: data.water_ml,
+                      glasses: data.glasses,
                     })
                     .eq("id", data.id);
 
@@ -314,6 +338,15 @@ class SyncService {
             break;
           }
         }
+
+        newXp += sync.xp_gained ?? 0;
+      }
+
+      if (newXp > data.experience_points) {
+        const updateXpError = await this.updateUserXp(userId, newXp);
+        if (updateXpError) {
+          console.error("Error updating XP in supabase:", updateXpError);
+        }
       }
     } catch (error) {
       console.error("Error syncing to Supabase:", error);
@@ -334,7 +367,7 @@ class SyncService {
       }
 
       // First, push any pending changes
-      await this.syncToSupabase();
+      await this.syncToSupabase(userId);
 
       // Then, pull latest from Supabase
       await this.fetchAndUpdateLocal(userId);

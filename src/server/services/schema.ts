@@ -24,19 +24,19 @@ export const initDatabase = async () => {
       updated_at TEXT
     );
     
-    -- Water consumption (historical)
+    -- Water consumption
     CREATE TABLE IF NOT EXISTS water_consumption (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       date TEXT NOT NULL,
-      water_ml INTEGER DEFAULT 0,
+      glasses INTEGER DEFAULT 0,
       needs_sync INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(user_id, date)
     );
 
-    -- Sleep (historical)
+    -- Sleep
     CREATE TABLE IF NOT EXISTS sleep (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -48,7 +48,7 @@ export const initDatabase = async () => {
       UNIQUE(user_id, date)
     );
     
-    -- Today's meals
+    -- Meals
     CREATE TABLE IF NOT EXISTS meals (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -60,7 +60,7 @@ export const initDatabase = async () => {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     
-    -- Today's workouts
+    -- Workouts
     CREATE TABLE IF NOT EXISTS workouts (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -77,6 +77,7 @@ export const initDatabase = async () => {
       table_name TEXT NOT NULL,
       action TEXT NOT NULL,
       data TEXT NOT NULL,
+      xp_gained INTEGER DEFAULT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     

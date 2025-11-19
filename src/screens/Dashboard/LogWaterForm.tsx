@@ -9,39 +9,17 @@ const LogWaterForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (ml: number) => void;
+  onSubmit: () => void;
   onCancel: () => void;
 }) => {
-  const [ml, setMl] = useState("");
-
-  const handleSubmit = () => {
-    const parsedMl = parseInt(ml, 10);
-    if (!isNaN(parsedMl) && parsedMl > 0) {
-      onSubmit(parsedMl);
-    } else {
-      Alert.alert(
-        "Invalid Input",
-        "Please enter a positive number of milliliters."
-      );
-    }
-  };
-
   return (
     <ThemedCard style={styles.loggingCard}>
       <ThemedText title style={styles.loggingCardTitle}>
         Log Water
       </ThemedText>
-      <TextInput
-        placeholder="Milliliters (ml)"
-        value={ml}
-        onChangeText={setMl}
-        keyboardType="numeric"
-        style={styles.input}
-        placeholderTextColor={Colors.placeholderText}
-      />
       <View style={styles.loggingButtonContainer}>
-        <ThemedButton onPress={handleSubmit} style={styles.loggingButton}>
-          <ThemedText style={styles.loggingButtonText}>Log</ThemedText>
+        <ThemedButton onPress={onSubmit} style={styles.loggingButton}>
+          <ThemedText style={styles.loggingButtonText}>Add glass</ThemedText>
         </ThemedButton>
         <ThemedButton
           onPress={onCancel}
@@ -75,17 +53,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 12,
     textAlign: "center",
-  },
-  input: {
-    height: 45,
-    borderColor: Colors.inputBorder,
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: Colors.inputBackground,
-    fontSize: 16,
-    color: Colors.text,
   },
   loggingButtonContainer: {
     flexDirection: "row",

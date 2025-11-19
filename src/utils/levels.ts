@@ -1,28 +1,35 @@
 /**
  * Calculate level based on XP
- * Example: Level 1 = 0-99 XP, Level 2 = 100-299 XP, etc.
  */
 export function calculateLevel(xp: number): number {
-  // Simple formula: Level = floor(sqrt(XP / 100)) + 1
+  // Simple formula: Level = floor(sqrt(XP / 1000)) + 1
   // Adjust this to match your game design
-  return Math.floor(Math.sqrt(xp / 100)) + 1;
+  return Math.floor(Math.sqrt(xp / 1000)) + 1;
 }
 
 /**
- * Calculate XP needed for next level
+ * Calculate total XP needed for next level
  */
-export function getXPForNextLevel(currentLevel: number): number {
+export function getTotalXpNeededForNextLevel(level: number): number {
   // Inverse of calculateLevel
-  return currentLevel * currentLevel * 100;
+  return level * level * 1000;
+}
+
+/**
+ * Calculate XP need for next level
+ */
+export function getXpNeedForNextLevel(totalXp: number): number {
+  const currentLevel = calculateLevel(totalXp);
+  return getTotalXpNeededForNextLevel(currentLevel) - totalXp;
 }
 
 /**
  * Get XP progress to next level as percentage
  */
 export function getLevelProgress(xp: number, level: number): number {
-  const currentLevelXP = getXPForNextLevel(level - 1);
-  const nextLevelXP = getXPForNextLevel(level);
+  const currentLevelXP = getTotalXpNeededForNextLevel(level - 1);
+  const nextLevelXP = getTotalXpNeededForNextLevel(level);
   const progress =
-    ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+    ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 1000;
   return Math.min(Math.max(progress, 0), 100);
 }

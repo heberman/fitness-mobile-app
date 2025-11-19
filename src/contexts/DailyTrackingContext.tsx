@@ -1,6 +1,5 @@
 import React, {
   createContext,
-  useContext,
   useState,
   useEffect,
   useCallback,
@@ -8,11 +7,18 @@ import React, {
 } from "react";
 import { dailyTrackingService } from "../server/services/dailyTracking";
 import { useUser } from "../hooks/useUser";
-import type { TodayData } from "../types/localstore.types";
+import type { TodayProgress } from "../types/localstore.types";
+import { useProfile } from "../hooks/useProfile";
+import {
+  XP_CALORIE_BURNED,
+  XP_GLASS_WATER,
+  XP_MEAL_LOGGED,
+  XP_MINUTE_SLEEP,
+} from "../constants/XpValues";
 
 export type DailyTrackingContextType = {
   // Today's data
-  todayData: TodayData | null;
+  todayProgress: TodayProgress | null;
   loading: boolean;
   error: Error | null;
 
@@ -23,7 +29,7 @@ export type DailyTrackingContextType = {
   logWorkout: (caloriesBurned: number) => Promise<void>;
 
   // Actions for stats
-  addWater: (ml: number) => Promise<void>;
+  addWater: () => Promise<void>;
   addSleep: (minutes: number) => Promise<void>;
 
   // Refresh
@@ -36,22 +42,25 @@ export const DailyTrackingContext = createContext<
 
 export function DailyTrackingProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
-  const [todayData, setTodayData] = useState<TodayData | null>(null);
+  const { awardXp: awardXP } = useProfile();
+  const [todayProgress, setTodayProgress] = useState<TodayProgress | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   // Load today's data when user changes
   const loadTodayData = useCallback(async () => {
     if (!user?.id) {
-      setTodayData(null);
+      setTodayProgress(null);
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const data = await dailyTrackingService.getTodayData(user.id);
-      setTodayData(data);
+      const data = await dailyTrackingService.getTodayProgress(user.id);
+      setTodayProgress(data);
       setError(null);
     } catch (err) {
       console.error("Failed to load today data:", err);
@@ -67,7 +76,7 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
 
   const logMeal = useCallback(
     async (name: string, calories: number): Promise<void> => {
-      if (!user?.id || !todayData) {
+      if (!user?.id || !todayProgress) {
         throw new Error("No user or data available");
       }
 
@@ -78,16 +87,17 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
           calories
         );
 
-        // Optimistic update
-        setTodayData((prev) => {
+        awardXP(XP_MEAL_LOGGED);
+
+        setTodayProgress((prev) => {
           if (!prev) return prev;
           const newMeals = [...prev.meals, newMeal];
-          const newCaloriesConsumed = prev.calories_consumed + calories;
+          const newCaloriesConsumed = prev.caloriesConsumed + calories;
 
           return {
             ...prev,
             meals: newMeals,
-            calories_consumed: newCaloriesConsumed,
+            caloriesConsumed: newCaloriesConsumed,
           };
         });
       } catch (err) {
@@ -97,12 +107,12 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    [user?.id, todayData, loadTodayData]
+    [user?.id, todayProgress, loadTodayData]
   );
 
   const logWorkout = useCallback(
     async (caloriesBurned: number): Promise<void> => {
-      if (!user?.id || !todayData) {
+      if (!user?.id || !todayProgress) {
         throw new Error("No user or data available");
       }
 
@@ -112,17 +122,17 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
           caloriesBurned
         );
 
-        // Optimistic update
-        setTodayData((prev) => {
+        awardXP(XP_CALORIE_BURNED * caloriesBurned);
+
+        setTodayProgress((prev) => {
           if (!prev) return prev;
           const newWorkouts = [...prev.workouts, newWorkout];
-          const newCaloriesBurned = prev.calories_burned + caloriesBurned;
+          const newCaloriesBurned = prev.caloriesBurned + caloriesBurned;
 
           return {
             ...prev,
             workouts: newWorkouts,
-
-            calories_burned: newCaloriesBurned,
+            caloriesBurned: newCaloriesBurned,
           };
         });
       } catch (err) {
@@ -131,53 +141,51 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    [user?.id, todayData, loadTodayData]
+    [user?.id, todayProgress, loadTodayData]
   );
 
-  const addWater = useCallback(
-    async (ml: number): Promise<void> => {
-      if (!user?.id || !todayData) {
-        throw new Error("No user or data available");
-      }
+  const addWater = useCallback(async (): Promise<void> => {
+    if (!user?.id || !todayProgress) {
+      throw new Error("No user or data available");
+    }
 
-      try {
-        await dailyTrackingService.addWater(user.id, ml);
+    try {
+      await dailyTrackingService.addWater(user.id);
 
-        // Optimistic update
-        setTodayData((prev) => {
-          if (!prev) return prev;
-          const newWaterMl = prev.water_ml + ml;
+      awardXP(XP_GLASS_WATER);
 
-          return {
-            ...prev,
-            water_ml: newWaterMl,
-          };
-        });
-      } catch (err) {
-        console.error("Failed to add water:", err);
-        await loadTodayData();
-        throw err;
-      }
-    },
-    [user?.id, todayData, loadTodayData]
-  );
+      setTodayProgress((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          waterGlasses: prev.waterGlasses + 1,
+        };
+      });
+    } catch (err) {
+      console.error("Failed to add water:", err);
+      await loadTodayData();
+      throw err;
+    }
+  }, [user?.id, todayProgress, loadTodayData]);
 
   const addSleep = useCallback(
     async (minutes: number): Promise<void> => {
-      if (!user?.id || !todayData) {
+      if (!user?.id || !todayProgress) {
         throw new Error("No user or data available");
       }
 
       try {
         await dailyTrackingService.addSleep(user.id, minutes);
 
-        // Optimistic update
-        setTodayData((prev) => {
+        awardXP(minutes * XP_MINUTE_SLEEP);
+
+        setTodayProgress((prev) => {
           if (!prev) return prev;
 
           return {
             ...prev,
-            sleep_minutes: prev.sleep_minutes + minutes,
+            sleepMinutes: prev.sleepMinutes + minutes,
           };
         });
       } catch (err) {
@@ -186,7 +194,7 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    [user?.id, todayData, loadTodayData]
+    [user?.id, todayProgress, loadTodayData]
   );
 
   const refreshTodayData = useCallback(async () => {
@@ -196,7 +204,7 @@ export function DailyTrackingProvider({ children }: { children: ReactNode }) {
   return (
     <DailyTrackingContext.Provider
       value={{
-        todayData,
+        todayProgress,
         loading,
         error,
         logMeal,

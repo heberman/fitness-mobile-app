@@ -6,10 +6,17 @@ import type {
   Meal,
   Workout,
   TodayData,
+  TodayProgress,
 } from "../../types/localstore.types";
 // Import the sync service
 import { syncService } from "./sync";
 import * as ExpoCrypto from "expo-crypto";
+import {
+  XP_CALORIE_BURNED,
+  XP_GLASS_WATER,
+  XP_MEAL_LOGGED,
+  XP_MINUTE_SLEEP,
+} from "../../constants/XpValues";
 
 class DailyTrackingService {
   private db: SQLite.SQLiteDatabase | null = null;
@@ -27,8 +34,6 @@ class DailyTrackingService {
   private getTodayDate(): string {
     return new Date().toISOString().split("T")[0];
   }
-
-  // ========== MEALS ==========
 
   async logMeal(userId: string, name: string, calories: number): Promise<Meal> {
     const db = this.getDb();
@@ -53,8 +58,8 @@ class DailyTrackingService {
     );
 
     // Add to sync queue and attempt sync
-    await syncService.addToSyncQueue("meals", "insert", meal);
-    await syncService.syncToSupabase(); // Attempt to sync immediately
+    await syncService.addToSyncQueue("meals", "insert", meal, XP_MEAL_LOGGED);
+    await syncService.syncToSupabase(userId); // Attempt to sync immediately
 
     return meal;
   }
@@ -68,14 +73,6 @@ class DailyTrackingService {
       [userId, today]
     );
   }
-
-  async deleteMeal(mealId: string): Promise<void> {
-    const db = this.getDb();
-    await db.runAsync("DELETE FROM meals WHERE id = ?", [mealId]);
-    // TODO: Add sync logic for delete
-  }
-
-  // ========== WORKOUTS ==========
 
   async logWorkout(userId: string, caloriesBurned: number): Promise<Workout> {
     const db = this.getDb();
@@ -99,8 +96,13 @@ class DailyTrackingService {
     );
 
     // Add to sync queue and attempt sync
-    await syncService.addToSyncQueue("workouts", "insert", workout);
-    await syncService.syncToSupabase(); // Attempt to sync immediately
+    await syncService.addToSyncQueue(
+      "workouts",
+      "insert",
+      workout,
+      caloriesBurned * XP_CALORIE_BURNED
+    );
+    await syncService.syncToSupabase(userId); // Attempt to sync immediately
 
     return workout;
   }
@@ -141,7 +143,7 @@ class DailyTrackingService {
     return existingRecord;
   }
 
-  async addWater(userId: string, ml: number): Promise<void> {
+  async addWater(userId: string): Promise<void> {
     const db = this.getDb();
     const today = this.getTodayDate();
     const now = new Date().toISOString();
@@ -151,15 +153,16 @@ class DailyTrackingService {
 
     if (existingRecord) {
       // Update existing record
-      const newWaterMl = existingRecord.water_ml + ml;
+      const newWater = existingRecord.glasses + 1;
       await db.runAsync(
-        "UPDATE water_consumption SET water_ml = ?, needs_sync = 1, updated_at = ? WHERE id = ?",
-        [newWaterMl, now, existingRecord.id]
+        "UPDATE water_consumption SET glasses = ?, needs_sync = 1, updated_at = ? WHERE id = ?",
+        [newWater, now, existingRecord.id]
       );
       // Add to sync queue
       await syncService.addToSyncQueue("water_consumption", "update", {
         id: existingRecord.id,
-        water_ml: newWaterMl,
+        glasses: newWater,
+        XP_GLASS_WATER,
       });
     } else {
       // Create new record
@@ -168,30 +171,33 @@ class DailyTrackingService {
         id,
         user_id: userId,
         date: today,
-        water_ml: ml,
+        glasses: 1,
         created_at: now,
         updated_at: now,
       };
       await db.runAsync(
-        `INSERT INTO water_consumption (id, user_id, date, water_ml, needs_sync, created_at, updated_at)
+        `INSERT INTO water_consumption (id, user_id, date, glasses, needs_sync, created_at, updated_at)
          VALUES (?, ?, ?, ?, 1, ?, ?)`,
-        [id, userId, today, ml, now, now]
+        [id, userId, today, 1, now, now]
       );
       // Add to sync queue
       await syncService.addToSyncQueue(
         "water_consumption",
         "insert",
-        waterConsumption
+        waterConsumption,
+        XP_GLASS_WATER
       );
     }
 
-    await syncService.syncToSupabase(); // Attempt to sync immediately
+    await syncService.syncToSupabase(userId); // Attempt to sync immediately
   }
 
   async addSleep(userId: string, sleepMinutes: number): Promise<void> {
     const db = this.getDb();
     const today = this.getTodayDate();
     const now = new Date().toISOString();
+
+    const xpGained = sleepMinutes * XP_MINUTE_SLEEP;
 
     // Check if a record for today already exists
     const existingRecord = await this.getTodaySleep(userId);
@@ -207,6 +213,7 @@ class DailyTrackingService {
       await syncService.addToSyncQueue("sleep", "update", {
         id: existingRecord.id,
         sleep_minutes: newSleepMinutes,
+        xpGained,
       });
     } else {
       // Create new record
@@ -225,10 +232,10 @@ class DailyTrackingService {
         [id, userId, today, sleepMinutes, now, now]
       );
       // Add to sync queue
-      await syncService.addToSyncQueue("sleep", "insert", sleep);
+      await syncService.addToSyncQueue("sleep", "insert", sleep, xpGained);
     }
 
-    await syncService.syncToSupabase(); // Attempt to sync immediately
+    await syncService.syncToSupabase(userId); // Attempt to sync immediately
   }
 
   async fetchAndUpdateLocal(userId: string): Promise<void> {
@@ -304,13 +311,13 @@ class DailyTrackingService {
       if (water) {
         for (const waterRecord of water) {
           await db.runAsync(
-            `INSERT OR REPLACE INTO water_consumption (id, user_id, date, water_ml, needs_sync, updated_at)
+            `INSERT OR REPLACE INTO water_consumption (id, user_id, date, glasses, needs_sync, updated_at)
                VALUES (?, ?, ?, ?, 0, ?)`,
             [
               waterRecord.id,
               waterRecord.user_id,
               waterRecord.date,
-              waterRecord.water_ml,
+              waterRecord.glasses,
               waterRecord.updated_at,
             ]
           );
@@ -339,9 +346,16 @@ class DailyTrackingService {
     }
   }
 
-  // ========== GET TODAY'S COMPLETE DATA ==========
+  getXPGained(todayData: TodayData): number {
+    let xpGained = 0;
+    xpGained += todayData.meals.length * XP_MEAL_LOGGED;
+    xpGained += todayData.caloriesBurned * XP_CALORIE_BURNED;
+    xpGained += todayData.sleepMinutes * XP_MINUTE_SLEEP;
+    xpGained += todayData.waterGlasses * XP_GLASS_WATER;
+    return xpGained;
+  }
 
-  async getTodayData(userId: string): Promise<TodayData> {
+  async getTodayProgress(userId: string): Promise<TodayProgress> {
     await this.fetchAndUpdateLocal(userId);
     const [meals, workouts, water, sleep] = await Promise.all([
       this.getTodayMeals(userId),
@@ -350,17 +364,23 @@ class DailyTrackingService {
       this.getTodaySleep(userId),
     ]);
 
-    const data: TodayData = {
+    const todayData: TodayData = {
       meals,
       workouts,
-      calories_consumed: meals.reduce((sum, m) => sum + m.calories, 0),
-      calories_burned: workouts.reduce((sum, w) => sum + w.calories_burned, 0),
-      water_ml: water?.water_ml ?? 0,
-      sleep_minutes: sleep?.sleep_minutes ?? 0,
+      caloriesConsumed: meals.reduce((sum, m) => sum + m.calories, 0),
+      caloriesBurned: workouts.reduce((sum, w) => sum + w.calories_burned, 0),
+      waterGlasses: water?.glasses ?? 0,
+      sleepMinutes: sleep?.sleep_minutes ?? 0,
     };
-    console.log("Fetched data for today:", data);
 
-    return data;
+    const todayProgress: TodayProgress = {
+      ...todayData,
+      xpGained: this.getXPGained(todayData),
+    };
+
+    console.log("Fetched progress for today:", todayProgress);
+
+    return todayProgress;
   }
 }
 

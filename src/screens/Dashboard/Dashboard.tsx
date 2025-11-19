@@ -10,7 +10,11 @@ import ThemedView from "../../components/ThemedView";
 import ThemedText from "../../components/ThemedText";
 import ThemedCard from "../../components/ThemedCard";
 import { useProfile } from "../../hooks/useProfile";
-import { getXPForNextLevel } from "../../utils/levels";
+import {
+  calculateLevel,
+  getTotalXpNeededForNextLevel,
+  getXpNeedForNextLevel,
+} from "../../utils/levels";
 import ThemedButton from "../../components/ThemedButton";
 import { useDailyTracking } from "../../hooks/useDailyTracking";
 import { Colors } from "../../constants/Colors";
@@ -34,7 +38,7 @@ export enum LoggingFormType {
 export default function Dashboard() {
   const { profile, loading: profileLoading } = useProfile();
   const {
-    todayData,
+    todayProgress,
     logMeal,
     logWorkout,
     addWater,
@@ -92,9 +96,9 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogWaterSubmit = async (ml: number) => {
+  const handleLogWaterSubmit = async () => {
     try {
-      await addWater(ml);
+      await addWater();
       closeLoggingForm();
       await refreshTodayData();
     } catch (error) {
@@ -115,7 +119,7 @@ export default function Dashboard() {
   };
 
   // Show loading indicator if profile or todayData is not yet loaded
-  if (profileLoading || !profile || !todayData) {
+  if (profileLoading || !profile || !todayProgress) {
     return (
       <ThemedView
         style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
@@ -132,15 +136,18 @@ export default function Dashboard() {
           FitGenie
         </ThemedText>
         <ThemedCard style={styles.levelCard}>
-          <ThemedText
-            title
-            style={styles.levelText}
-          >{`Level ${profile.level}`}</ThemedText>
+          <ThemedText title style={styles.levelText}>{`Level ${calculateLevel(
+            profile.experience_points
+          )}`}</ThemedText>
           <View>
-            <ThemedText style={{}}>{`XP earned today: 0`}</ThemedText>
-            <ThemedText style={{}}>{`XP needed for next level: ${
-              getXPForNextLevel(profile.level) - profile.experience_points
-            }`}</ThemedText>
+            <ThemedText
+              style={{}}
+            >{`XP earned today: ${todayProgress.xpGained}`}</ThemedText>
+            <ThemedText
+              style={{}}
+            >{`XP needed for next level: ${getXpNeedForNextLevel(
+              profile.experience_points
+            )}`}</ThemedText>
           </View>
         </ThemedCard>
 
@@ -151,7 +158,7 @@ export default function Dashboard() {
               title
               style={{ ...styles.statNumberText, color: "lightgreen" }}
             >
-              {todayData.calories_consumed}
+              {todayProgress.caloriesConsumed}
             </ThemedText>
             <ThemedText style={{}}>Calories consumed</ThemedText>
           </View>
@@ -160,7 +167,7 @@ export default function Dashboard() {
               title
               style={{ ...styles.statNumberText, color: "lightcoral" }}
             >
-              {todayData.calories_burned}
+              {todayProgress.caloriesBurned}
             </ThemedText>
             <ThemedText style={{}}>Calories burned</ThemedText>
           </View>
@@ -169,16 +176,16 @@ export default function Dashboard() {
               title
               style={{ ...styles.statNumberText, color: "lightblue" }}
             >
-              {`${todayData.water_ml} mL`}
+              {todayProgress.waterGlasses}
             </ThemedText>
-            <ThemedText style={{}}>Water consumed</ThemedText>
+            <ThemedText style={{}}>Water glasses drank</ThemedText>
           </View>
           <View style={styles.stat}>
             <ThemedText
               title
               style={{ ...styles.statNumberText, color: "plum" }}
             >
-              {Math.round((todayData.sleep_minutes / 60) * 10) / 10}
+              {Math.round((todayProgress.sleepMinutes / 60) * 10) / 10}
             </ThemedText>
             <ThemedText style={{}}>Hours of sleep</ThemedText>
           </View>

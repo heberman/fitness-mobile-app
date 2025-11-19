@@ -11,11 +11,12 @@ export type SyncQueueItem = {
   table_name: string;
   action: "update" | "insert" | "delete";
   data: string;
+  xp_gained: number | null;
   created_at?: string;
 };
 
 export type ProfileUpdate = {
-  experience_points: number;
+  xpGained: number;
   level: number;
 };
 
@@ -47,8 +48,12 @@ export type Workout = DbWorkout & {
 export type TodayData = {
   meals: Meal[];
   workouts: Workout[];
-  calories_consumed: number;
-  calories_burned: number;
-  water_ml: number;
-  sleep_minutes: number;
+  caloriesConsumed: number;
+  caloriesBurned: number;
+  waterGlasses: number;
+  sleepMinutes: number;
+};
+
+export type TodayProgress = TodayData & {
+  xpGained: number;
 };
