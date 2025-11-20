@@ -1,400 +1,392 @@
-import { supabase } from "../db";
-import * as SQLite from "expo-sqlite";
+import { supabase } from '../db'
+import * as SQLite from 'expo-sqlite'
 import type {
-  WaterConsumption,
-  Sleep,
-  Meal,
-  Workout,
-  TodayData,
-  TodayProgress,
-  TodayMeal,
-  TodayWorkout,
-} from "../../types/localstore.types";
+	WaterConsumption,
+	Sleep,
+	Meal,
+	Workout,
+	TodayData,
+	TodayProgress,
+	TodayMeal,
+	TodayWorkout,
+} from '../../types/localstore.types'
 // Import the sync service
-import { syncService } from "./sync";
+import { syncService } from './sync'
 import {
-  XP_CALORIE_BURNED,
-  XP_GLASS_WATER,
-  XP_MEAL_LOGGED,
-  XP_MINUTE_SLEEP,
-} from "../../constants/XpValues";
-import * as ExpoCrypto from "expo-crypto";
+	XP_CALORIE_BURNED,
+	XP_GLASS_WATER,
+	XP_MEAL_LOGGED,
+	XP_MINUTE_SLEEP,
+} from '../../constants/XpValues'
+import * as ExpoCrypto from 'expo-crypto'
 
 class DailyTrackingService {
-  private db: SQLite.SQLiteDatabase | null = null;
+	private db: SQLite.SQLiteDatabase | null = null
 
-  async init(database: SQLite.SQLiteDatabase): Promise<void> {
-    console.log("Initializing daily tracking service...");
-    this.db = database;
-  }
+	async init(database: SQLite.SQLiteDatabase): Promise<void> {
+		console.log('Initializing daily tracking service...')
+		this.db = database
+	}
 
-  private getDb(): SQLite.SQLiteDatabase {
-    if (!this.db) throw new Error("DailyTrackingService not initialized");
-    return this.db;
-  }
+	private getDb(): SQLite.SQLiteDatabase {
+		if (!this.db) throw new Error('DailyTrackingService not initialized')
+		return this.db
+	}
 
-  private getTodayDate(): string {
-    return new Date().toISOString().split("T")[0];
-  }
+	private getTodayDate(): string {
+		return new Date().toISOString().split('T')[0]
+	}
 
-  async logMeal(userId: string, newMeal: TodayMeal): Promise<Meal> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
-    const now = new Date().toISOString(); // Added for created_at and logged_at
+	async logMeal(userId: string, newMeal: TodayMeal): Promise<Meal> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
+		const now = new Date().toISOString() // Added for created_at and logged_at
 
-    const meal: Meal = {
-      ...newMeal,
-      user_id: userId,
-      date: today,
-      logged_at: now,
-      created_at: now,
-    };
+		const meal: Meal = {
+			...newMeal,
+			user_id: userId,
+			date: today,
+			logged_at: now,
+			created_at: now,
+		}
 
-    await db.runAsync(
-      `INSERT INTO meals (id, user_id, name, calories, date, logged_at, created_at, needs_sync)
+		await db.runAsync(
+			`INSERT INTO meals (id, user_id, name, calories, date, logged_at, created_at, needs_sync)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        newMeal.id,
-        userId,
-        newMeal.name,
-        newMeal.calories,
-        today,
-        meal.logged_at,
-        meal.created_at,
-        1,
-      ] // All values now correctly mapped
-    );
+			[
+				newMeal.id,
+				userId,
+				newMeal.name,
+				newMeal.calories,
+				today,
+				meal.logged_at,
+				meal.created_at,
+				1,
+			], // All values now correctly mapped
+		)
 
-    // Add to sync queue and attempt sync
-    await syncService.addToSyncQueue("meals", "insert", meal, XP_MEAL_LOGGED);
-    await syncService.syncToSupabase(userId); // Attempt to sync immediately
+		// Add to sync queue and attempt sync
+		await syncService.addToSyncQueue('meals', 'insert', meal, XP_MEAL_LOGGED)
+		await syncService.syncToSupabase(userId) // Attempt to sync immediately
 
-    return meal;
-  }
+		return meal
+	}
 
-  async getTodayMeals(userId: string): Promise<Meal[]> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
+	async getTodayMeals(userId: string): Promise<Meal[]> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
 
-    return await db.getAllAsync<Meal>(
-      "SELECT * FROM meals WHERE user_id = ? AND date = ? ORDER BY logged_at ASC",
-      [userId, today]
-    );
-  }
+		return await db.getAllAsync<Meal>(
+			'SELECT * FROM meals WHERE user_id = ? AND date = ? ORDER BY logged_at ASC',
+			[userId, today],
+		)
+	}
 
-  async logWorkout(
-    userId: string,
-    { id, caloriesBurned }: TodayWorkout
-  ): Promise<Workout> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
-    const now = new Date().toISOString();
+	async logWorkout(userId: string, { id, caloriesBurned }: TodayWorkout): Promise<Workout> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
+		const now = new Date().toISOString()
 
-    const workout: Workout = {
-      id,
-      user_id: userId,
-      calories_burned: caloriesBurned,
-      date: today,
-      completed_at: now,
-      created_at: now,
-    };
+		const workout: Workout = {
+			id,
+			user_id: userId,
+			calories_burned: caloriesBurned,
+			date: today,
+			completed_at: now,
+			created_at: now,
+		}
 
-    await db.runAsync(
-      `INSERT INTO workouts (id, user_id, calories_burned, date, completed_at, created_at, needs_sync)
+		await db.runAsync(
+			`INSERT INTO workouts (id, user_id, calories_burned, date, completed_at, created_at, needs_sync)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, caloriesBurned, today, now, now, 1] // All values now correctly mapped
-    );
+			[id, userId, caloriesBurned, today, now, now, 1], // All values now correctly mapped
+		)
 
-    // Add to sync queue and attempt sync
-    await syncService.addToSyncQueue(
-      "workouts",
-      "insert",
-      workout,
-      caloriesBurned * XP_CALORIE_BURNED
-    );
-    await syncService.syncToSupabase(userId); // Attempt to sync immediately
+		// Add to sync queue and attempt sync
+		await syncService.addToSyncQueue(
+			'workouts',
+			'insert',
+			workout,
+			caloriesBurned * XP_CALORIE_BURNED,
+		)
+		await syncService.syncToSupabase(userId) // Attempt to sync immediately
 
-    return workout;
-  }
+		return workout
+	}
 
-  async getTodayWorkouts(userId: string): Promise<Workout[]> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
+	async getTodayWorkouts(userId: string): Promise<Workout[]> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
 
-    return await db.getAllAsync<Workout>(
-      "SELECT * FROM workouts WHERE user_id = ? AND date = ? ORDER BY completed_at ASC",
-      [userId, today]
-    );
-  }
+		return await db.getAllAsync<Workout>(
+			'SELECT * FROM workouts WHERE user_id = ? AND date = ? ORDER BY completed_at ASC',
+			[userId, today],
+		)
+	}
 
-  async getTodayWaterConsumption(
-    userId: string
-  ): Promise<WaterConsumption | null> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
+	async getTodayWaterConsumption(userId: string): Promise<WaterConsumption | null> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
 
-    const existingRecord = await db.getFirstAsync<WaterConsumption | null>(
-      "SELECT * FROM water_consumption WHERE user_id = ? AND date = ?",
-      [userId, today]
-    );
+		const existingRecord = await db.getFirstAsync<WaterConsumption | null>(
+			'SELECT * FROM water_consumption WHERE user_id = ? AND date = ?',
+			[userId, today],
+		)
 
-    return existingRecord;
-  }
+		return existingRecord
+	}
 
-  async getTodaySleep(userId: string): Promise<Sleep | null> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
+	async getTodaySleep(userId: string): Promise<Sleep | null> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
 
-    const existingRecord = await db.getFirstAsync<Sleep | null>(
-      "SELECT * FROM sleep WHERE user_id = ? AND date = ?",
-      [userId, today]
-    );
+		const existingRecord = await db.getFirstAsync<Sleep | null>(
+			'SELECT * FROM sleep WHERE user_id = ? AND date = ?',
+			[userId, today],
+		)
 
-    return existingRecord;
-  }
+		return existingRecord
+	}
 
-  async addWater(userId: string): Promise<void> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
-    const now = new Date().toISOString();
+	async addWater(userId: string): Promise<void> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
+		const now = new Date().toISOString()
 
-    // Check if a record for today already exists
-    const existingRecord = await this.getTodayWaterConsumption(userId);
+		// Check if a record for today already exists
+		const existingRecord = await this.getTodayWaterConsumption(userId)
 
-    if (existingRecord) {
-      // Update existing record
-      const newWater = existingRecord.glasses + 1;
-      await db.runAsync(
-        "UPDATE water_consumption SET glasses = ?, needs_sync = 1, updated_at = ? WHERE id = ?",
-        [newWater, now, existingRecord.id]
-      );
-      // Add to sync queue
-      await syncService.addToSyncQueue("water_consumption", "update", {
-        id: existingRecord.id,
-        glasses: newWater,
-        XP_GLASS_WATER,
-      });
-    } else {
-      // Create new record
-      const id = ExpoCrypto.randomUUID();
-      const waterConsumption: WaterConsumption = {
-        id,
-        user_id: userId,
-        date: today,
-        glasses: 1,
-        created_at: now,
-        updated_at: now,
-      };
-      await db.runAsync(
-        `INSERT INTO water_consumption (id, user_id, date, glasses, needs_sync, created_at, updated_at)
+		if (existingRecord) {
+			// Update existing record
+			const newWater = existingRecord.glasses + 1
+			await db.runAsync(
+				'UPDATE water_consumption SET glasses = ?, needs_sync = 1, updated_at = ? WHERE id = ?',
+				[newWater, now, existingRecord.id],
+			)
+			// Add to sync queue
+			await syncService.addToSyncQueue('water_consumption', 'update', {
+				id: existingRecord.id,
+				glasses: newWater,
+				XP_GLASS_WATER,
+			})
+		} else {
+			// Create new record
+			const id = ExpoCrypto.randomUUID()
+			const waterConsumption: WaterConsumption = {
+				id,
+				user_id: userId,
+				date: today,
+				glasses: 1,
+				created_at: now,
+				updated_at: now,
+			}
+			await db.runAsync(
+				`INSERT INTO water_consumption (id, user_id, date, glasses, needs_sync, created_at, updated_at)
          VALUES (?, ?, ?, ?, 1, ?, ?)`,
-        [id, userId, today, 1, now, now]
-      );
-      // Add to sync queue
-      await syncService.addToSyncQueue(
-        "water_consumption",
-        "insert",
-        waterConsumption,
-        XP_GLASS_WATER
-      );
-    }
+				[id, userId, today, 1, now, now],
+			)
+			// Add to sync queue
+			await syncService.addToSyncQueue(
+				'water_consumption',
+				'insert',
+				waterConsumption,
+				XP_GLASS_WATER,
+			)
+		}
 
-    await syncService.syncToSupabase(userId); // Attempt to sync immediately
-  }
+		await syncService.syncToSupabase(userId) // Attempt to sync immediately
+	}
 
-  async addSleep(userId: string, sleepMinutes: number): Promise<void> {
-    const db = this.getDb();
-    const today = this.getTodayDate();
-    const now = new Date().toISOString();
+	async addSleep(userId: string, sleepMinutes: number): Promise<void> {
+		const db = this.getDb()
+		const today = this.getTodayDate()
+		const now = new Date().toISOString()
 
-    const xpGained = sleepMinutes * XP_MINUTE_SLEEP;
+		const xpGained = sleepMinutes * XP_MINUTE_SLEEP
 
-    // Check if a record for today already exists
-    const existingRecord = await this.getTodaySleep(userId);
+		// Check if a record for today already exists
+		const existingRecord = await this.getTodaySleep(userId)
 
-    if (existingRecord) {
-      // Update existing record
-      const newSleepMinutes = existingRecord.sleep_minutes + sleepMinutes;
-      await db.runAsync(
-        "UPDATE sleep SET sleep_minutes = ?, needs_sync = 1, updated_at = ? WHERE id = ?",
-        [newSleepMinutes, now, existingRecord.id]
-      );
-      // Add to sync queue
-      await syncService.addToSyncQueue("sleep", "update", {
-        id: existingRecord.id,
-        sleep_minutes: newSleepMinutes,
-        xpGained,
-      });
-    } else {
-      // Create new record
-      const id = ExpoCrypto.randomUUID();
-      const sleep: Sleep = {
-        id,
-        user_id: userId,
-        date: today,
-        sleep_minutes: sleepMinutes,
-        created_at: now,
-        updated_at: now,
-      };
-      await db.runAsync(
-        `INSERT INTO sleep (id, user_id, date, sleep_minutes, needs_sync, created_at, updated_at)
+		if (existingRecord) {
+			// Update existing record
+			const newSleepMinutes = existingRecord.sleep_minutes + sleepMinutes
+			await db.runAsync(
+				'UPDATE sleep SET sleep_minutes = ?, needs_sync = 1, updated_at = ? WHERE id = ?',
+				[newSleepMinutes, now, existingRecord.id],
+			)
+			// Add to sync queue
+			await syncService.addToSyncQueue('sleep', 'update', {
+				id: existingRecord.id,
+				sleep_minutes: newSleepMinutes,
+				xpGained,
+			})
+		} else {
+			// Create new record
+			const id = ExpoCrypto.randomUUID()
+			const sleep: Sleep = {
+				id,
+				user_id: userId,
+				date: today,
+				sleep_minutes: sleepMinutes,
+				created_at: now,
+				updated_at: now,
+			}
+			await db.runAsync(
+				`INSERT INTO sleep (id, user_id, date, sleep_minutes, needs_sync, created_at, updated_at)
          VALUES (?, ?, ?, ?, 1, ?, ?)`,
-        [id, userId, today, sleepMinutes, now, now]
-      );
-      // Add to sync queue
-      await syncService.addToSyncQueue("sleep", "insert", sleep, xpGained);
-    }
+				[id, userId, today, sleepMinutes, now, now],
+			)
+			// Add to sync queue
+			await syncService.addToSyncQueue('sleep', 'insert', sleep, xpGained)
+		}
 
-    await syncService.syncToSupabase(userId); // Attempt to sync immediately
-  }
+		await syncService.syncToSupabase(userId) // Attempt to sync immediately
+	}
 
-  async fetchAndUpdateLocal(userId: string): Promise<void> {
-    console.log("Fetching today's data...");
+	async fetchAndUpdateLocal(userId: string): Promise<void> {
+		console.log("Fetching today's data...")
 
-    try {
-      const today = this.getTodayDate();
-      const db = this.getDb();
+		try {
+			const today = this.getTodayDate()
+			const db = this.getDb()
 
-      // Fetch today's data from Supabase
-      const { data: meals, error: mealsError } = await supabase
-        .from("meals")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", today);
-      if (mealsError) throw mealsError;
+			// Fetch today's data from Supabase
+			const { data: meals, error: mealsError } = await supabase
+				.from('meals')
+				.select('*')
+				.eq('user_id', userId)
+				.eq('date', today)
+			if (mealsError) throw mealsError
 
-      const { data: workouts, error: workoutsError } = await supabase
-        .from("workouts")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", today);
-      if (workoutsError) throw workoutsError;
+			const { data: workouts, error: workoutsError } = await supabase
+				.from('workouts')
+				.select('*')
+				.eq('user_id', userId)
+				.eq('date', today)
+			if (workoutsError) throw workoutsError
 
-      const { data: water, error: waterError } = await supabase
-        .from("water_consumption")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", today);
-      if (waterError) throw waterError;
+			const { data: water, error: waterError } = await supabase
+				.from('water_consumption')
+				.select('*')
+				.eq('user_id', userId)
+				.eq('date', today)
+			if (waterError) throw waterError
 
-      const { data: sleep, error: sleepError } = await supabase
-        .from("sleep")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", today);
-      if (sleepError) throw sleepError;
+			const { data: sleep, error: sleepError } = await supabase
+				.from('sleep')
+				.select('*')
+				.eq('user_id', userId)
+				.eq('date', today)
+			if (sleepError) throw sleepError
 
-      // Update local database
-      if (meals) {
-        for (const meal of meals) {
-          await db.runAsync(
-            `INSERT OR REPLACE INTO meals (id, user_id, name, calories, date, logged_at, created_at, needs_sync)
+			// Update local database
+			if (meals) {
+				for (const meal of meals) {
+					await db.runAsync(
+						`INSERT OR REPLACE INTO meals (id, user_id, name, calories, date, logged_at, created_at, needs_sync)
                VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
-            [
-              meal.id,
-              meal.user_id,
-              meal.name,
-              meal.calories,
-              meal.date,
-              meal.logged_at,
-              meal.created_at,
-            ]
-          );
-        }
-      }
-      if (workouts) {
-        for (const workout of workouts) {
-          await db.runAsync(
-            `INSERT OR REPLACE INTO workouts (id, user_id, calories_burned, date, completed_at, created_at, needs_sync)
+						[
+							meal.id,
+							meal.user_id,
+							meal.name,
+							meal.calories,
+							meal.date,
+							meal.logged_at,
+							meal.created_at,
+						],
+					)
+				}
+			}
+			if (workouts) {
+				for (const workout of workouts) {
+					await db.runAsync(
+						`INSERT OR REPLACE INTO workouts (id, user_id, calories_burned, date, completed_at, created_at, needs_sync)
                VALUES (?, ?, ?, ?, ?, ?, 0)`,
-            [
-              workout.id,
-              workout.user_id,
-              workout.calories_burned,
-              workout.date,
-              workout.completed_at,
-              workout.created_at,
-            ]
-          );
-        }
-      }
-      if (water) {
-        for (const waterRecord of water) {
-          await db.runAsync(
-            `INSERT OR REPLACE INTO water_consumption (id, user_id, date, glasses, needs_sync, updated_at)
+						[
+							workout.id,
+							workout.user_id,
+							workout.calories_burned,
+							workout.date,
+							workout.completed_at,
+							workout.created_at,
+						],
+					)
+				}
+			}
+			if (water) {
+				for (const waterRecord of water) {
+					await db.runAsync(
+						`INSERT OR REPLACE INTO water_consumption (id, user_id, date, glasses, needs_sync, updated_at)
                VALUES (?, ?, ?, ?, 0, ?)`,
-            [
-              waterRecord.id,
-              waterRecord.user_id,
-              waterRecord.date,
-              waterRecord.glasses,
-              waterRecord.updated_at,
-            ]
-          );
-        }
-      }
-      if (sleep) {
-        for (const sleepRecord of sleep) {
-          await db.runAsync(
-            `INSERT OR REPLACE INTO sleep (id, user_id, date, sleep_minutes, needs_sync, updated_at)
+						[
+							waterRecord.id,
+							waterRecord.user_id,
+							waterRecord.date,
+							waterRecord.glasses,
+							waterRecord.updated_at,
+						],
+					)
+				}
+			}
+			if (sleep) {
+				for (const sleepRecord of sleep) {
+					await db.runAsync(
+						`INSERT OR REPLACE INTO sleep (id, user_id, date, sleep_minutes, needs_sync, updated_at)
                VALUES (?, ?, ?, ?, 0, ?)`,
-            [
-              sleepRecord.id,
-              sleepRecord.user_id,
-              sleepRecord.date,
-              sleepRecord.sleep_minutes,
-              sleepRecord.updated_at,
-            ]
-          );
-        }
-      }
-    } catch (error) {
-      console.error(
-        "Error fetching and updating local daily tracking data:",
-        error
-      );
-    }
-  }
+						[
+							sleepRecord.id,
+							sleepRecord.user_id,
+							sleepRecord.date,
+							sleepRecord.sleep_minutes,
+							sleepRecord.updated_at,
+						],
+					)
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching and updating local daily tracking data:', error)
+		}
+	}
 
-  getXPGained(todayData: TodayData): number {
-    let xpGained = 0;
-    xpGained += todayData.meals.length * XP_MEAL_LOGGED;
-    xpGained += todayData.caloriesBurned * XP_CALORIE_BURNED;
-    xpGained += todayData.sleepMinutes * XP_MINUTE_SLEEP;
-    xpGained += todayData.waterGlasses * XP_GLASS_WATER;
-    return xpGained;
-  }
+	getXPGained(todayData: TodayData): number {
+		let xpGained = 0
+		xpGained += todayData.meals.length * XP_MEAL_LOGGED
+		xpGained += todayData.caloriesBurned * XP_CALORIE_BURNED
+		xpGained += todayData.sleepMinutes * XP_MINUTE_SLEEP
+		xpGained += todayData.waterGlasses * XP_GLASS_WATER
+		return xpGained
+	}
 
-  async getTodayProgress(userId: string): Promise<TodayProgress> {
-    await this.fetchAndUpdateLocal(userId);
-    const [meals, workouts, water, sleep] = await Promise.all([
-      this.getTodayMeals(userId),
-      this.getTodayWorkouts(userId),
-      this.getTodayWaterConsumption(userId),
-      this.getTodaySleep(userId),
-    ]);
+	async getTodayProgress(userId: string): Promise<TodayProgress> {
+		await this.fetchAndUpdateLocal(userId)
+		const [meals, workouts, water, sleep] = await Promise.all([
+			this.getTodayMeals(userId),
+			this.getTodayWorkouts(userId),
+			this.getTodayWaterConsumption(userId),
+			this.getTodaySleep(userId),
+		])
 
-    const todayData: TodayData = {
-      meals,
-      workouts: workouts.map((w) => ({
-        ...w,
-        caloriesBurned: w.calories_burned,
-      })),
-      caloriesConsumed: meals.reduce((sum, m) => sum + m.calories, 0),
-      caloriesBurned: workouts.reduce((sum, w) => sum + w.calories_burned, 0),
-      waterGlasses: water?.glasses ?? 0,
-      sleepMinutes: sleep?.sleep_minutes ?? 0,
-    };
+		const todayData: TodayData = {
+			meals,
+			workouts: workouts.map((w) => ({
+				...w,
+				caloriesBurned: w.calories_burned,
+			})),
+			caloriesConsumed: meals.reduce((sum, m) => sum + m.calories, 0),
+			caloriesBurned: workouts.reduce((sum, w) => sum + w.calories_burned, 0),
+			waterGlasses: water?.glasses ?? 0,
+			sleepMinutes: sleep?.sleep_minutes ?? 0,
+		}
 
-    const todayProgress: TodayProgress = {
-      ...todayData,
-      xpGained: this.getXPGained(todayData),
-    };
+		const todayProgress: TodayProgress = {
+			...todayData,
+			xpGained: this.getXPGained(todayData),
+		}
 
-    console.log("Fetched progress for today:", todayProgress);
+		console.log('Fetched progress for today:', todayProgress)
 
-    return todayProgress;
-  }
+		return todayProgress
+	}
 }
 
-export const dailyTrackingService = new DailyTrackingService();
+export const dailyTrackingService = new DailyTrackingService()

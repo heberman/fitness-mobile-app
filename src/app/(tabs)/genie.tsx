@@ -1,5 +1,5 @@
-import GenieChat from "../../screens/GenieChat";
+import GenieChat from '../../screens/GenieChat'
 
 export default function GenieScreen() {
-  return <GenieChat />;
+	return <GenieChat />
 }

@@ -1,10 +1,10 @@
 // db/schema.js
-import * as SQLite from "expo-sqlite";
+import * as SQLite from 'expo-sqlite'
 
 export const initDatabase = async () => {
-  const db = await SQLite.openDatabaseAsync("fitness_app.db");
+	const db = await SQLite.openDatabaseAsync('fitness_app.db')
 
-  await db.execAsync(`
+	await db.execAsync(`
     -- Temp code to clear local
     DROP TABLE IF EXISTS daily_summaries;
     DROP TABLE IF EXISTS water_consumption;
@@ -90,7 +90,7 @@ export const initDatabase = async () => {
       ON meals(user_id, date DESC);
     CREATE INDEX IF NOT EXISTS idx_workouts_user_date 
       ON workouts(user_id, date DESC);
-  `);
+  `)
 
-  return db;
-};
+	return db
+}
