@@ -1,14 +1,14 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { dailyTrackingService } from '../server/services/dailyTracking'
-import { useUser } from '../hooks/useUser'
+import { dailyTrackingService } from '@services/dailyTracking'
+import { useUser } from '@hooks/useUser'
 import type { TodayMeal, TodayProgress, TodayWorkout } from '../types/localstore'
-import { useProfile } from '../hooks/useProfile'
+import { useProfile } from '@hooks/useProfile'
 import {
 	XP_CALORIE_BURNED,
 	XP_GLASS_WATER,
 	XP_MEAL_LOGGED,
 	XP_MINUTE_SLEEP,
-} from '../constants/XpValues'
+} from '@constants/XpValues'
 import * as ExpoCrypto from 'expo-crypto'
 
 export type DailyTrackingContextType = {

@@ -16,7 +16,7 @@ import {
 	XP_GLASS_WATER,
 	XP_MEAL_LOGGED,
 	XP_MINUTE_SLEEP,
-} from '../../constants/XpValues'
+} from '@constants/XpValues'
 import * as ExpoCrypto from 'expo-crypto'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '../../types/db'

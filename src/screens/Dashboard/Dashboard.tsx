@@ -1,24 +1,24 @@
 import React, { useState, useCallback } from 'react'
 import { StyleSheet, View, TextInput, Alert, ActivityIndicator } from 'react-native'
-import ThemedView from '../../components/ThemedView'
-import ThemedText from '../../components/ThemedText'
-import ThemedCard from '../../components/ThemedCard'
-import { useProfile } from '../../hooks/useProfile'
+import ThemedView from '@components/ThemedView'
+import ThemedText from '@components/ThemedText'
+import ThemedCard from '@components/ThemedCard'
+import { useProfile } from '@hooks/useProfile'
 import {
 	calculateLevel,
 	getTotalXpNeededForNextLevel,
 	getXpNeedForNextLevel,
 } from '../../utils/levels'
-import ThemedButton from '../../components/ThemedButton'
-import { useDailyTracking } from '../../hooks/useDailyTracking'
-import { Colors } from '../../constants/Colors'
+import ThemedButton from '@components/ThemedButton'
+import { useDailyTracking } from '@hooks/useDailyTracking'
+import { Colors } from '@constants/Colors'
 
 // Import the individual logging forms
 import LogMealForm from './LogMealForm'
 import LogWorkoutForm from './LogWorkoutForm'
 import LogWaterForm from './LogWaterForm'
 import LogSleepForm from './LogSleepForm'
-import ThemedScrollView from '../../components/ThemedScrollView'
+import ThemedScrollView from '@components/ThemedScrollView'
 
 // Enum to manage the visibility of logging forms
 export enum LoggingFormType {

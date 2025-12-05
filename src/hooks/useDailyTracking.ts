@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { DailyTrackingContext, DailyTrackingContextType } from '../contexts/DailyTrackingContext'
+import { DailyTrackingContext, DailyTrackingContextType } from '@contexts/DailyTrackingContext'
 
 export function useDailyTracking(): DailyTrackingContextType {
 	const context = useContext(DailyTrackingContext)

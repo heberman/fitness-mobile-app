@@ -1,4 +1,3 @@
-// db/schema.js
 import * as SQLite from 'expo-sqlite'
 
 export const initDatabase = async () => {

@@ -1,6 +1,6 @@
 // contexts/UserContext.tsx
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react'
-import { supabase } from '../server/db'
+import { supabase } from '@server/db'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 
 type AuthResponse = {

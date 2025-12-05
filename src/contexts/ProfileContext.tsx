@@ -1,9 +1,9 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { UserProfile } from '../types/localstore'
-import { useUser } from '../hooks/useUser'
+import { useUser } from '@hooks/useUser'
 import { calculateLevel } from '../utils/levels'
-import { syncService } from '../server/services/sync'
-import { useDailyTracking } from '../hooks/useDailyTracking'
+import { syncService } from '@services/sync'
+import { useDailyTracking } from '@hooks/useDailyTracking'
 
 type ProfileContextType = {
 	profile: UserProfile | null

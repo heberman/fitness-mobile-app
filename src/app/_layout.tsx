@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react'
 import { View, Text, ActivityIndicator } from 'react-native'
 import { Slot, useSegments, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { syncService } from '../server/services/sync'
-import { useUser } from '../hooks/useUser'
-import ThemedText from '../components/ThemedText'
-import ThemedView from '../components/ThemedView'
-import { UserProvider } from '../contexts/UserContext'
-import { ProfileProvider } from '../contexts/ProfileContext'
-import { initDatabase } from '../server/services/schema'
-import { dailyTrackingService } from '../server/services/dailyTracking'
-import { DailyTrackingProvider } from '../contexts/DailyTrackingContext'
-import { supabase } from '../server/db'
+import { syncService } from '@services/sync'
+import { useUser } from '@hooks/useUser'
+import ThemedText from '@components/ThemedText'
+import ThemedView from '@components/ThemedView'
+import { UserProvider } from '@contexts/UserContext'
+import { ProfileProvider } from '@contexts/ProfileContext'
+import { initDatabase } from '@server/services/schema'
+import { dailyTrackingService } from '@server/services/dailyTracking'
+import { DailyTrackingProvider } from '@contexts/DailyTrackingContext'
+import { supabase } from '@server/db'
 
 function RootLayoutNav() {
 	const { user, loading } = useUser()
@@ -28,7 +28,7 @@ function RootLayoutNav() {
 				console.log('Initializing database...')
 				const db = await initDatabase()
 				await syncService.init(db, supabase)
-				await dailyTrackingService.init(db)
+				await dailyTrackingService.init(db, supabase)
 				console.log('Services initialized successfully')
 				setDbReady(true)
 			} catch (error) {

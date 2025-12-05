@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react'
 import { StyleSheet, View, TextInput, Alert } from 'react-native'
-import ThemedText from '../../components/ThemedText'
-import ThemedCard from '../../components/ThemedCard'
-import ThemedButton from '../../components/ThemedButton'
-import { Colors } from '../../constants/Colors'
+import ThemedText from '@components/ThemedText'
+import ThemedCard from '@components/ThemedCard'
+import ThemedButton from '@components/ThemedButton'
+import { Colors } from '@constants/Colors'
 
 const LogMealForm = ({
 	onSubmit,

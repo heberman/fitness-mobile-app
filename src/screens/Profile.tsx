@@ -1,7 +1,7 @@
 import { TouchableOpacity } from 'react-native'
-import { useUser } from '../hooks/useUser'
-import ThemedView from '../components/ThemedView'
-import ThemedText from '../components/ThemedText'
+import { useUser } from '@hooks/useUser'
+import ThemedView from '@components/ThemedView'
+import ThemedText from '@components/ThemedText'
 
 export default function Profile() {
 	const { signOut } = useUser()

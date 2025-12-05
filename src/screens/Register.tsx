@@ -1,10 +1,10 @@
 import { StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native'
-import ThemedView from '../components/ThemedView'
+import ThemedView from '@components/ThemedView'
 import { useState } from 'react'
-import ThemedText from '../components/ThemedText'
-import { useUser } from '../hooks/useUser'
-import ThemedCard from '../components/ThemedCard'
-import { Colors } from '../constants/Colors'
+import ThemedText from '@components/ThemedText'
+import { useUser } from '@hooks/useUser'
+import ThemedCard from '@components/ThemedCard'
+import { Colors } from '@constants/Colors'
 import { Link } from 'expo-router'
 
 export default function Register() {

@@ -6,8 +6,9 @@ import type {
 	DbUserProfile,
 	WaterConsumption,
 	Sleep,
+	Meal,
+	Workout,
 } from '../../types/localstore'
-import type { Meal, Workout } from '../../types/localstore'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '../../types/db'
 
