@@ -11,6 +11,7 @@ import { ProfileProvider } from '../contexts/ProfileContext'
 import { initDatabase } from '../server/services/schema'
 import { dailyTrackingService } from '../server/services/dailyTracking'
 import { DailyTrackingProvider } from '../contexts/DailyTrackingContext'
+import { supabase } from '../server/db'
 
 function RootLayoutNav() {
 	const { user, loading } = useUser()
@@ -26,7 +27,7 @@ function RootLayoutNav() {
 			try {
 				console.log('Initializing database...')
 				const db = await initDatabase()
-				await syncService.init(db)
+				await syncService.init(db, supabase)
 				await dailyTrackingService.init(db)
 				console.log('Services initialized successfully')
 				setDbReady(true)

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { dailyTrackingService } from '../server/services/dailyTracking'
 import { useUser } from '../hooks/useUser'
-import type { TodayMeal, TodayProgress, TodayWorkout } from '../types/localstore.types'
+import type { TodayMeal, TodayProgress, TodayWorkout } from '../types/localstore'
 import { useProfile } from '../hooks/useProfile'
 import {
 	XP_CALORIE_BURNED,

@@ -1,4 +1,3 @@
-import { supabase } from '../db'
 import * as SQLite from 'expo-sqlite'
 import type {
 	WaterConsumption,
@@ -9,7 +8,7 @@ import type {
 	TodayProgress,
 	TodayMeal,
 	TodayWorkout,
-} from '../../types/localstore.types'
+} from '../../types/localstore'
 // Import the sync service
 import { syncService } from './sync'
 import {
@@ -19,13 +18,17 @@ import {
 	XP_MINUTE_SLEEP,
 } from '../../constants/XpValues'
 import * as ExpoCrypto from 'expo-crypto'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { Database } from '../../types/db'
 
-class DailyTrackingService {
+export class DailyTrackingService {
 	private db: SQLite.SQLiteDatabase | null = null
+	private supabase: SupabaseClient<Database> | null = null
 
-	async init(database: SQLite.SQLiteDatabase): Promise<void> {
+	async init(database: SQLite.SQLiteDatabase, supabase: SupabaseClient<Database>): Promise<void> {
 		console.log('Initializing daily tracking service...')
 		this.db = database
+		this.supabase = supabase
 	}
 
 	private getDb(): SQLite.SQLiteDatabase {
@@ -164,11 +167,15 @@ class DailyTrackingService {
 				[newWater, now, existingRecord.id],
 			)
 			// Add to sync queue
-			await syncService.addToSyncQueue('water_consumption', 'update', {
-				id: existingRecord.id,
-				glasses: newWater,
+			await syncService.addToSyncQueue(
+				'water_consumption',
+				'update',
+				{
+					id: existingRecord.id,
+					glasses: newWater,
+				},
 				XP_GLASS_WATER,
-			})
+			)
 		} else {
 			// Create new record
 			const id = ExpoCrypto.randomUUID()
@@ -251,28 +258,28 @@ class DailyTrackingService {
 			const db = this.getDb()
 
 			// Fetch today's data from Supabase
-			const { data: meals, error: mealsError } = await supabase
+			const { data: meals, error: mealsError } = await this.supabase
 				.from('meals')
 				.select('*')
 				.eq('user_id', userId)
 				.eq('date', today)
 			if (mealsError) throw mealsError
 
-			const { data: workouts, error: workoutsError } = await supabase
+			const { data: workouts, error: workoutsError } = await this.supabase
 				.from('workouts')
 				.select('*')
 				.eq('user_id', userId)
 				.eq('date', today)
 			if (workoutsError) throw workoutsError
 
-			const { data: water, error: waterError } = await supabase
+			const { data: water, error: waterError } = await this.supabase
 				.from('water_consumption')
 				.select('*')
 				.eq('user_id', userId)
 				.eq('date', today)
 			if (waterError) throw waterError
 
-			const { data: sleep, error: sleepError } = await supabase
+			const { data: sleep, error: sleepError } = await this.supabase
 				.from('sleep')
 				.select('*')
 				.eq('user_id', userId)

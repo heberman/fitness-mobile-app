@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { UserProfile } from '../types/localstore.types'
+import { UserProfile } from '../types/localstore'
 import { useUser } from '../hooks/useUser'
 import { calculateLevel } from '../utils/levels'
 import { syncService } from '../server/services/sync'

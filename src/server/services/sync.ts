@@ -1,26 +1,27 @@
-import { supabase } from '../db'
 import * as SQLite from 'expo-sqlite'
 import NetInfo from '@react-native-community/netinfo'
 import type {
 	UserProfile,
 	SyncQueueItem,
-	ProfileUpdate,
 	DbUserProfile,
 	WaterConsumption,
 	Sleep,
-} from '../../types/localstore.types'
-import type { Meal, Workout } from '../../types/localstore.types'
-import { calculateLevel } from '../../utils/levels'
+} from '../../types/localstore'
+import type { Meal, Workout } from '../../types/localstore'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { Database } from '../../types/db'
 
-class SyncService {
+export class SyncService {
 	private db: SQLite.SQLiteDatabase | null = null
+	private supabase: SupabaseClient<Database> | null = null
 	private isSyncing: boolean = false
 	private isInitialized: boolean = false
 
-	async init(database: SQLite.SQLiteDatabase): Promise<void> {
+	async init(localDb: SQLite.SQLiteDatabase, supabase: SupabaseClient<Database>): Promise<void> {
 		if (this.isInitialized) return
 		console.log('Initializing sync service...')
-		this.db = database
+		this.db = localDb
+		this.supabase = supabase
 		this.isInitialized = true
 	}
 
@@ -37,7 +38,7 @@ class SyncService {
 	async fetchAndUpdateLocal(userId: string): Promise<DbUserProfile | null> {
 		try {
 			console.log('Fetching profile...')
-			const { data, error } = await supabase
+			const { data, error } = await this.supabase
 				.from('profiles')
 				.select('*') // Corrected: removed newline and space
 				.eq('id', userId)
@@ -146,7 +147,7 @@ class SyncService {
 	async updateUserXp(userId: string, newXp: number) {
 		const now = new Date().toISOString()
 
-		const { error } = await supabase
+		const { error } = await this.supabase
 			.from('profiles')
 			.update({
 				experience_points: newXp,
@@ -189,7 +190,7 @@ class SyncService {
 				return
 			}
 
-			const { data, error } = await supabase
+			const { data, error } = await this.supabase
 				.from('profiles')
 				.select('experience_points')
 				.eq('id', userId)
@@ -202,7 +203,7 @@ class SyncService {
 				switch (sync.table_name) {
 					case 'profiles': {
 						if (sync.action === 'update') {
-							const { error } = await supabase
+							const { error } = await this.supabase
 								.from('profiles')
 								.update({
 									experience_points: data.experience_points,
@@ -230,7 +231,7 @@ class SyncService {
 					}
 					case 'meals': {
 						if (sync.action === 'insert') {
-							const { error } = await supabase.from('meals').insert([data as Meal]) // Assuming data is the meal object
+							const { error } = await this.supabase.from('meals').insert([data as Meal]) // Assuming data is the meal object
 
 							if (!error) {
 								await db.runAsync('DELETE FROM sync_queue WHERE id = ?', [sync.id!])
@@ -245,7 +246,7 @@ class SyncService {
 					}
 					case 'workouts': {
 						if (sync.action === 'insert') {
-							const { error } = await supabase.from('workouts').insert([data as Workout]) // Assuming data is the workout object
+							const { error } = await this.supabase.from('workouts').insert([data as Workout]) // Assuming data is the workout object
 
 							if (!error) {
 								await db.runAsync('DELETE FROM sync_queue WHERE id = ?', [sync.id!])
@@ -261,8 +262,8 @@ class SyncService {
 					case 'water_consumption': {
 						const { error } =
 							sync.action === 'insert'
-								? await supabase.from('water_consumption').insert([data as WaterConsumption])
-								: await supabase
+								? await this.supabase.from('water_consumption').insert([data as WaterConsumption])
+								: await this.supabase
 										.from('water_consumption')
 										.update({
 											glasses: data.glasses,
@@ -284,8 +285,8 @@ class SyncService {
 					case 'sleep': {
 						const { error } =
 							sync.action === 'insert'
-								? await supabase.from('sleep').insert([data as Sleep])
-								: await supabase
+								? await this.supabase.from('sleep').insert([data as Sleep])
+								: await this.supabase
 										.from('sleep')
 										.update({
 											sleep_minutes: data.sleep_minutes,

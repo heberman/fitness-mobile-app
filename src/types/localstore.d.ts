@@ -1,4 +1,4 @@
-import { Database } from './db.types'
+import { Database } from './db'
 
 export type DbUserProfile = Database['public']['Tables']['profiles']['Row']
 

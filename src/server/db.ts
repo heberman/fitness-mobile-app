@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { Database } from '../types/db.types'
+import { Database } from '../types/db'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export const supabase = createClient<Database>(
