@@ -1,14 +1,10 @@
 import React, { useState, useCallback } from 'react'
-import { StyleSheet, View, TextInput, Alert, ActivityIndicator } from 'react-native'
+import { StyleSheet, View, Alert, ActivityIndicator } from 'react-native'
 import ThemedView from '@components/ThemedView'
 import ThemedText from '@components/ThemedText'
 import ThemedCard from '@components/ThemedCard'
 import { useProfile } from '@hooks/useProfile'
-import {
-	calculateLevel,
-	getTotalXpNeededForNextLevel,
-	getXpNeedForNextLevel,
-} from '../../utils/levels'
+import { calculateLevel, getXpNeedForNextLevel } from '../../utils/levels'
 import ThemedButton from '@components/ThemedButton'
 import { useDailyTracking } from '@hooks/useDailyTracking'
 import { Colors } from '@constants/Colors'
