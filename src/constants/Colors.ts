@@ -1,9 +1,10 @@
 export const Colors = {
-	background: '#0f172a',
-	primary: '#8b5cf6',
+	background: '#00171f',
+	primary: '#00a7e1',
+	secondary: '#007ea7',
 	text: '#d4d4d4',
 	title: '#fff',
-	uiBackground: '#1e293b',
+	uiBackground: '#003459',
 	warning: '#cc475a',
 	navIcon: '#94a3b8',
 	border: '#334155',
@@ -11,3 +12,8 @@ export const Colors = {
 	inputBackground: '#1a1a2e',
 	inputBorder: '#4a4a60',
 }
+
+// Possible colors:
+// Ink Black: #00171f
+// Deep Space Blue: #003459
+// Cerluean Blue: #007ea7

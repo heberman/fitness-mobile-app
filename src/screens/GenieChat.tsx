@@ -1,28 +1,16 @@
 import ThemedView from '@components/ThemedView'
 import ThemedText from '@components/ThemedText'
-import { StyleSheet, KeyboardAvoidingView, ScrollView } from 'react-native'
+import { StyleSheet, KeyboardAvoidingView, ScrollView, View } from 'react-native'
 import { Colors } from '@constants/Colors'
 import { useState, useEffect, useRef } from 'react'
 import ThemedButton from '@components/ThemedButton'
 import ThemedInput from '@components/ThemedInput'
 import ThemedScrollView from '@components/ThemedScrollView'
-
-type Message = {
-	id: number
-	text: string
-	isUser: boolean
-}
+import { useFitnessChat } from '@hooks/useFitnessChat'
+import Markdown from 'react-native-markdown-display'
 
 export default function GenieChat() {
-	const [messages, setMessages] = useState<Message[]>([
-		{ id: 1, text: "Hi! I'm your FitGenie. How can I help you today?", isUser: false },
-		{ id: 2, text: 'I want to build better eating habits', isUser: true },
-		{
-			id: 3,
-			text: "Great goal! Let's start by tracking your meals daily. I can help you build consistency and earn XP along the way!",
-			isUser: false,
-		},
-	])
+	const { messages, sendMessage, isLoading, error } = useFitnessChat()
 	const [inputValue, setInputValue] = useState('')
 
 	const quickActions = ['Meal Tips', 'Workout Ideas']
@@ -39,28 +27,12 @@ export default function GenieChat() {
 		scrollRef.current?.scrollToEnd({ animated: true })
 	}
 
-	const handleSend = () => {
-		const messageText = inputValue.trim()
-		if (!messageText) return
-		const newMessage = {
-			id: messages.length + 1,
-			text: inputValue,
-			isUser: true,
+	const handleSend = async () => {
+		if (inputValue.trim() && !isLoading) {
+			await sendMessage(inputValue.trim())
+			setInputValue('')
+			// setTimeout(() => scrollRef.current?.scrollToEnd(), 100);
 		}
-		setMessages([...messages, newMessage])
-		setInputValue('')
-
-		// Mock response
-		setTimeout(() => {
-			setMessages((prev) => [
-				...prev,
-				{
-					id: prev.length + 1,
-					text: "That's a great question! I'm here to support you on your health journey. Keep logging your habits to earn more XP!",
-					isUser: false,
-				},
-			])
-		}, 1000)
 	}
 
 	return (
@@ -80,19 +52,26 @@ export default function GenieChat() {
 					contentContainerStyle={{}}
 					keyboardShouldPersistTaps="handled"
 				>
-					{messages.map((message) => (
-						<ThemedText
-							key={message.id}
+					{messages.map((message, index) => (
+						<View
+							key={index}
 							style={[
 								styles.message,
 								{
-									alignSelf: message.isUser ? 'flex-end' : 'flex-start',
-									backgroundColor: message.isUser ? Colors.primary : Colors.uiBackground,
+									alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+									backgroundColor: message.role === 'user' ? Colors.secondary : Colors.uiBackground,
 								},
 							]}
 						>
-							{message.text}
-						</ThemedText>
+							<Markdown
+								style={{
+									paragraph: { marginTop: 0, marginBottom: 0 },
+									body: { color: Colors.text },
+								}}
+							>
+								{message.parts}
+							</Markdown>
+						</View>
 					))}
 				</ThemedScrollView>
 
@@ -146,6 +125,7 @@ const styles = StyleSheet.create({
 	message: {
 		maxWidth: '80%',
 		backgroundColor: Colors.uiBackground,
+		color: Colors.text,
 		padding: 8,
 		marginVertical: 8,
 		borderRadius: 8,
