@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
 	loggingCard: {
 		padding: 16,
 		marginBottom: 16,
-		backgroundColor: Colors.uiBackground,
+		backgroundColor: Colors.surfaceBackground,
 		borderRadius: 12,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
@@ -54,13 +54,14 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		paddingVertical: 12,
 		borderRadius: 8,
+		backgroundColor: Colors.primary,
 	},
 	loggingButtonText: {
 		fontSize: 16,
 		fontWeight: 'bold',
 	},
 	cancelButton: {
-		backgroundColor: Colors.uiBackground,
+		backgroundColor: Colors.surfaceBackground,
 	},
 	cancelButtonText: {
 		color: Colors.text,

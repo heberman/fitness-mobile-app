@@ -4,6 +4,7 @@ import ThemedText from '@components/ThemedText'
 import ThemedCard from '@components/ThemedCard'
 import ThemedButton from '@components/ThemedButton'
 import { Colors } from '@constants/Colors'
+import ThemedInput from '@components/ThemedInput'
 
 const LogMealForm = ({
 	onSubmit,
@@ -29,14 +30,14 @@ const LogMealForm = ({
 			<ThemedText title style={styles.loggingCardTitle}>
 				Log Meal
 			</ThemedText>
-			<TextInput
+			<ThemedInput
 				placeholder="Meal Name"
 				value={name}
 				onChangeText={setName}
 				style={styles.input}
 				placeholderTextColor={Colors.placeholderText}
 			/>
-			<TextInput
+			<ThemedInput
 				placeholder="Calories"
 				value={calories}
 				onChangeText={setCalories}
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
 	loggingCard: {
 		padding: 16,
 		marginBottom: 16,
-		backgroundColor: Colors.uiBackground,
+		backgroundColor: Colors.surfaceBackground,
 		borderRadius: 12,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
@@ -78,14 +79,7 @@ const styles = StyleSheet.create({
 	},
 	input: {
 		height: 45,
-		borderColor: Colors.inputBorder,
-		borderWidth: 1,
 		marginBottom: 12,
-		paddingHorizontal: 12,
-		borderRadius: 8,
-		backgroundColor: Colors.inputBackground,
-		fontSize: 16,
-		color: Colors.text,
 	},
 	loggingButtonContainer: {
 		flexDirection: 'row',
@@ -98,13 +92,14 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		paddingVertical: 12,
 		borderRadius: 8,
+		backgroundColor: Colors.primary,
 	},
 	loggingButtonText: {
 		fontSize: 16,
 		fontWeight: 'bold',
 	},
 	cancelButton: {
-		backgroundColor: Colors.uiBackground,
+		backgroundColor: Colors.surfaceBackground,
 	},
 	cancelButtonText: {
 		color: Colors.text,

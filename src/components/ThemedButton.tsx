@@ -4,7 +4,7 @@ import { Colors } from '@constants/Colors'
 const ThemedButton = ({ style, ...props }) => {
 	return (
 		<TouchableOpacity
-			style={[{ backgroundColor: Colors.uiBackground }, styles.button, style]}
+			style={[{ backgroundColor: Colors.surfaceBackground }, styles.button, style]}
 			{...props}
 		/>
 	)

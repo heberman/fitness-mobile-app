@@ -17,7 +17,6 @@ export const initDatabase = async () => {
     CREATE TABLE IF NOT EXISTS user_profile (
       id TEXT PRIMARY KEY,
       experience_points INTEGER DEFAULT 0,
-      level INTEGER DEFAULT 1,
       last_synced TEXT,
       needs_sync INTEGER DEFAULT 0,
       updated_at TEXT

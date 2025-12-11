@@ -13,8 +13,6 @@ export default function GenieChat() {
 	const { messages, sendMessage, isLoading, error } = useFitnessChat()
 	const [inputValue, setInputValue] = useState('')
 
-	const quickActions = ['Meal Tips', 'Workout Ideas']
-
 	const scrollRef = useRef<ScrollView | null>(null)
 
 	useEffect(() => {
@@ -59,7 +57,8 @@ export default function GenieChat() {
 								styles.message,
 								{
 									alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-									backgroundColor: message.role === 'user' ? Colors.secondary : Colors.uiBackground,
+									backgroundColor:
+										message.role === 'user' ? Colors.primary : Colors.surfaceBackground,
 								},
 							]}
 						>
@@ -74,16 +73,6 @@ export default function GenieChat() {
 						</View>
 					))}
 				</ThemedScrollView>
-
-				{/* Quick Actions */}
-				<ThemedView style={styles.rowContainer}>
-					{quickActions.map((action, index) => (
-						<ThemedButton key={index} style={{ flex: 1, alignItems: 'center' }} onPress={() => {}}>
-							<ThemedText style={{}}>{action}</ThemedText>
-						</ThemedButton>
-					))}
-				</ThemedView>
-
 				{/* Input */}
 				<ThemedView style={styles.rowContainer}>
 					<ThemedInput
@@ -94,7 +83,7 @@ export default function GenieChat() {
 						onFocus={handleInputFocus}
 						placeholderTextColor={Colors.placeholderText}
 					/>
-					<ThemedButton style={{}} onPress={handleSend}>
+					<ThemedButton style={{ backgroundColor: Colors.primary }} onPress={handleSend}>
 						<ThemedText style={{}}>Send</ThemedText>
 					</ThemedButton>
 				</ThemedView>
@@ -112,11 +101,11 @@ const styles = StyleSheet.create({
 	pageTitle: {
 		fontSize: 48,
 		fontWeight: 'bold',
-		color: Colors.primary,
+		color: Colors.logo,
 		width: '100%',
 		paddingHorizontal: 16,
 		borderBottomWidth: 2,
-		borderBottomColor: Colors.primary,
+		borderBottomColor: Colors.logo,
 	},
 	messages: {
 		flex: 1,
@@ -124,7 +113,7 @@ const styles = StyleSheet.create({
 	},
 	message: {
 		maxWidth: '80%',
-		backgroundColor: Colors.uiBackground,
+		backgroundColor: Colors.surfaceBackground,
 		color: Colors.text,
 		padding: 8,
 		marginVertical: 8,

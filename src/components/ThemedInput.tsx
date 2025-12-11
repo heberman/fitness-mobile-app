@@ -9,11 +9,11 @@ export default ThemedInput
 
 const styles = StyleSheet.create({
 	input: {
-		borderColor: Colors.inputBorder,
+		borderColor: Colors.surfaceBorder,
 		borderWidth: 1,
 		paddingHorizontal: 12,
 		borderRadius: 8,
-		backgroundColor: Colors.inputBackground,
+		backgroundColor: Colors.surfaceBackground,
 		fontSize: 16,
 		color: Colors.text,
 	},

@@ -8,10 +8,10 @@ export default function TabLayout() {
 			screenOptions={{
 				headerShown: false,
 				tabBarStyle: {
-					backgroundColor: Colors.uiBackground,
+					backgroundColor: Colors.surfaceBackground,
 					borderColor: Colors.border,
 				},
-				tabBarActiveTintColor: Colors.primary,
+				tabBarActiveTintColor: Colors.logo,
 				tabBarInactiveTintColor: Colors.navIcon,
 			}}
 		>
@@ -20,11 +20,7 @@ export default function TabLayout() {
 				options={{
 					title: 'Home',
 					tabBarIcon: ({ focused }) => (
-						<MaterialIcons
-							size={28}
-							name="home"
-							color={focused ? Colors.primary : Colors.navIcon}
-						/>
+						<MaterialIcons size={28} name="home" color={focused ? Colors.logo : Colors.navIcon} />
 					),
 				}}
 			/>
@@ -33,11 +29,7 @@ export default function TabLayout() {
 				options={{
 					title: 'Genie',
 					tabBarIcon: ({ focused }) => (
-						<MaterialIcons
-							size={28}
-							name="chat"
-							color={focused ? Colors.primary : Colors.navIcon}
-						/>
+						<MaterialIcons size={28} name="chat" color={focused ? Colors.logo : Colors.navIcon} />
 					),
 				}}
 			/>
@@ -46,11 +38,7 @@ export default function TabLayout() {
 				options={{
 					title: 'Profile',
 					tabBarIcon: ({ focused }) => (
-						<MaterialIcons
-							size={28}
-							name="person"
-							color={focused ? Colors.primary : Colors.navIcon}
-						/>
+						<MaterialIcons size={28} name="person" color={focused ? Colors.logo : Colors.navIcon} />
 					),
 				}}
 			/>

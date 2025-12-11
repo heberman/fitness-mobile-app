@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
 	appName: {
 		fontSize: 48,
 		fontWeight: 'bold',
-		color: Colors.primary,
+		color: Colors.logo,
 	},
 	appSubtitle: {
 		marginTop: 8,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
 		width: '100%',
 		paddingVertical: 12,
 		paddingHorizontal: 16,
-		backgroundColor: Colors.primary,
+		backgroundColor: Colors.logo,
 		color: Colors.text,
 		borderRadius: 8,
 		alignItems: 'center',

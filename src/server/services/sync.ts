@@ -98,11 +98,10 @@ export class SyncService {
 			await db.runAsync(
 				`UPDATE user_profile 
          SET experience_points = ?,
-             level = ?,
              needs_sync = 1,
              updated_at = ?
          WHERE id = ?`,
-				[newXp, 1, now, userId],
+				[newXp, now, userId],
 			)
 
 			if (sync) {

@@ -101,7 +101,7 @@ export default function Dashboard() {
 	if (profileLoading || !profile || !todayProgress) {
 		return (
 			<ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-				<ActivityIndicator size="large" color={Colors.primary} />
+				<ActivityIndicator size="large" color={Colors.logo} />
 			</ThemedView>
 		)
 	}
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
 	appName: {
 		fontSize: 48,
 		fontWeight: 'bold',
-		color: Colors.primary,
+		color: Colors.logo,
 	},
 	levelCard: {
 		flexDirection: 'row',
