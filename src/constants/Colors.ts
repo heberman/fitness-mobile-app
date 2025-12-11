@@ -10,6 +10,7 @@ export const Colors = {
 	navIcon: '#94a3b8',
 	border: '#334155',
 	placeholderText: '#9ca3af',
+	error: '#d32f2f',
 }
 
 // Possible colors:

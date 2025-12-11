@@ -107,8 +107,8 @@ export default function Dashboard() {
 	}
 
 	return (
-		<ThemedScrollView style={{}}>
-			<ThemedView style={styles.container} safe>
+		<ThemedScrollView safe style={{}}>
+			<ThemedView style={styles.container}>
 				<ThemedText title style={styles.appName}>
 					FitGenie
 				</ThemedText>
@@ -197,7 +197,7 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 16,
+		paddingHorizontal: 16,
 		gap: 24,
 	},
 	appName: {
