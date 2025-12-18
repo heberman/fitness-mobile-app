@@ -16,10 +16,17 @@ export const initDatabase = async () => {
     -- User profile table
     CREATE TABLE IF NOT EXISTS user_profile (
       id TEXT PRIMARY KEY,
+      first_name TEXT,
+      last_name TEXT,
       experience_points INTEGER DEFAULT 0,
+      date_of_birth TEXT,
+      gender TEXT,
+      height_inches INTEGER,
+      weight_lbs INTEGER,
       last_synced TEXT,
       needs_sync INTEGER DEFAULT 0,
-      updated_at TEXT
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     
     -- Water consumption

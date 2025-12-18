@@ -202,7 +202,7 @@ describe('SyncService', () => {
 
 			mockDb.runAsync.mockResolvedValue(undefined)
 
-			await syncService.updateLocalProfile(userId, newXp)
+			await syncService.updateLocalProfileXp(userId, newXp)
 
 			expect(mockDb.runAsync).toHaveBeenCalledTimes(1)
 			expect(mockDb.runAsync).toHaveBeenCalledWith(
@@ -220,7 +220,7 @@ describe('SyncService', () => {
 			// Mock addToSyncQueue
 			const queueSpy = jest.spyOn(syncService, 'addToSyncQueue').mockResolvedValue(undefined)
 
-			await syncService.updateLocalProfile(userId, 250, true)
+			await syncService.updateLocalProfileXp(userId, 250, true)
 
 			expect(queueSpy).toHaveBeenCalled()
 			expect(syncSpy).toHaveBeenCalledWith(userId)

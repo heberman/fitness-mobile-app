@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { UserProfile } from '../types/localstore'
+import { ProfileUpdate, UserProfile } from '../types/localstore'
 import { useUser } from '@hooks/useUser'
 import { calculateLevel } from '../utils/levels'
 import { syncService } from '@services/sync'
@@ -10,6 +10,7 @@ type ProfileContextType = {
 	loading: boolean
 	error: Error | null
 	awardXp: (xpAmount: number) => Promise<void>
+	updateProfile: (newProfile: ProfileUpdate) => Promise<void>
 	refreshProfile: () => Promise<void>
 }
 
@@ -46,6 +47,23 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 		loadProfile()
 	}, [user?.id])
 
+	const updateProfile = useCallback(
+		async (newProfile: ProfileUpdate): Promise<void> => {
+			if (!user?.id) {
+				throw new Error('No user available')
+			}
+
+			try {
+				const updatedProfile = await syncService.updateProfile(user.id, newProfile)
+				setProfile(updatedProfile)
+			} catch (err) {
+				console.error('Failed to update profile:', err)
+				throw err
+			}
+		},
+		[user?.id],
+	)
+
 	// Award XP with optimistic update
 	const awardXp = useCallback(
 		async (xpAmount: number): Promise<void> => {
@@ -64,7 +82,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
 			try {
 				// Update local
-				await syncService.updateLocalProfile(user.id, newXP)
+				await syncService.updateLocalProfileXp(user.id, newXP)
 			} catch (err) {
 				// Rollback on error
 				console.error('Failed to award XP:', err)
@@ -94,6 +112,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 				loading,
 				error,
 				awardXp,
+				updateProfile,
 				refreshProfile,
 			}}
 		>

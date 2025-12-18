@@ -1,39 +1,42 @@
+import ThemedButton from '@components/ThemedButton'
 import ThemedScrollView from '@components/ThemedScrollView'
 import ThemedText from '@components/ThemedText'
 import { Colors } from '@constants/Colors'
+import { useProfile } from '@hooks/useProfile'
 import { useUser } from '@hooks/useUser'
+import { calculateAge, formatHeight, formatMemberSince } from '@utils/formatters'
+import { calculateLevel } from '@utils/levels'
+import { router } from 'expo-router'
 import React from 'react'
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { View, Image, StyleSheet } from 'react-native'
 
 export default function ProfileScreen() {
-	// Sample user data - replace with actual user data from context/props
-	const user = {
-		name: 'John Doe',
-		profileImage: 'https://via.placeholder.com/150',
-		memberSince: 'January 2024',
-		level: 10,
-		age: 28,
-		gender: 'Male',
-		height: '5\'10"',
-		weight: '175 lbs',
-	}
+	const { profile } = useProfile()
 
 	const { signOut } = useUser()
+
+	const handleEdit = () => {
+		router.push('/edit-profile')
+	}
 
 	return (
 		<ThemedScrollView safe contentContainerStyle={styles.container}>
 			{/* Profile Picture */}
-			<Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+			<Image source={{ uri: 'https://via.placeholder.com/150' }} style={styles.profileImage} />
 
 			{/* User Name */}
 			<ThemedText title style={styles.name}>
-				{user.name}
+				{profile.first_name} {profile.last_name}
 			</ThemedText>
 
 			{/* Member Since and Level */}
-			<ThemedText style={styles.memberSince}>Member since {user.memberSince}</ThemedText>
+			<ThemedText style={styles.memberSince}>
+				Member since {formatMemberSince(profile?.created_at)}
+			</ThemedText>
 			<View style={styles.levelBadge}>
-				<ThemedText style={styles.levelText}>{`Level ${user.level}`}</ThemedText>
+				<ThemedText
+					style={styles.levelText}
+				>{`Level ${calculateLevel(profile.experience_points)}`}</ThemedText>
 			</View>
 
 			{/* Info Section */}
@@ -42,13 +45,13 @@ export default function ProfileScreen() {
 					<View style={styles.infoItem}>
 						<ThemedText style={styles.infoLabel}>Age</ThemedText>
 						<ThemedText title style={styles.infoValue}>
-							{user.age}
+							{calculateAge(profile.date_of_birth)}
 						</ThemedText>
 					</View>
 					<View style={styles.infoItem}>
 						<ThemedText style={styles.infoLabel}>Gender</ThemedText>
 						<ThemedText title style={styles.infoValue}>
-							{user.gender}
+							{profile.gender}
 						</ThemedText>
 					</View>
 				</View>
@@ -57,24 +60,31 @@ export default function ProfileScreen() {
 					<View style={styles.infoItem}>
 						<ThemedText style={styles.infoLabel}>Height</ThemedText>
 						<ThemedText title style={styles.infoValue}>
-							{user.height}
+							{formatHeight(profile.height_inches)}
 						</ThemedText>
 					</View>
 					<View style={styles.infoItem}>
 						<ThemedText style={styles.infoLabel}>Weight</ThemedText>
 						<ThemedText title style={styles.infoValue}>
-							{user.weight}
+							{profile.weight_lbs} lbs
 						</ThemedText>
 					</View>
 				</View>
 			</View>
 
+			{/* Edit Button */}
+			<ThemedButton style={styles.editButton} onPress={handleEdit}>
+				<ThemedText title style={styles.buttonText}>
+					Edit Profile
+				</ThemedText>
+			</ThemedButton>
+
 			{/* Sign Out Button */}
-			<TouchableOpacity style={styles.signOutButton} onPress={() => signOut()}>
-				<ThemedText title style={styles.signOutText}>
+			<ThemedButton style={styles.signOutButton} onPress={() => signOut()}>
+				<ThemedText title style={styles.buttonText}>
 					Sign Out
 				</ThemedText>
-			</TouchableOpacity>
+			</ThemedButton>
 		</ThemedScrollView>
 	)
 }
@@ -138,6 +148,12 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: '600',
 	},
+	editButton: {
+		width: '100%',
+		paddingVertical: 14,
+		borderRadius: 12,
+		alignItems: 'center',
+	},
 	signOutButton: {
 		width: '100%',
 		backgroundColor: Colors.error,
@@ -146,7 +162,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		marginTop: 'auto',
 	},
-	signOutText: {
+	buttonText: {
 		fontSize: 16,
 		fontWeight: 'bold',
 	},

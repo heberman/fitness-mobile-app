@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ActivityIndicator } from 'react-native'
-import { Slot, useSegments, useRouter } from 'expo-router'
+import { Slot, useSegments, useRouter, Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { syncService } from '@services/sync'
 import { useUser } from '@hooks/useUser'
@@ -96,7 +96,21 @@ function RootLayoutNav() {
 			<DailyTrackingProvider>
 				<View style={{ flex: 1 }}>
 					<StatusBar />
-					<Slot />
+					<Stack
+						screenOptions={{
+							headerShown: false,
+						}}
+					>
+						<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+						<Stack.Screen
+							name="edit-profile"
+							options={{
+								headerShown: false,
+								presentation: 'card',
+								animation: 'slide_from_right',
+							}}
+						/>
+					</Stack>
 				</View>
 			</DailyTrackingProvider>
 		</ProfileProvider>

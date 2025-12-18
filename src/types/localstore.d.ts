@@ -15,10 +15,7 @@ export type SyncQueueItem = {
 	created_at?: string
 }
 
-export type ProfileUpdate = {
-	xpGained: number
-	level: number
-}
+export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 
 export type DbWaterConsumption = Database['public']['Tables']['water_consumption']['Row']
 

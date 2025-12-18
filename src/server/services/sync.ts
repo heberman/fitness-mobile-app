@@ -8,6 +8,7 @@ import type {
 	Sleep,
 	Meal,
 	Workout,
+	ProfileUpdate,
 } from '../../types/localstore'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '../../types/db'
@@ -53,9 +54,22 @@ export class SyncService {
 				const db = this.getDb()
 				await db.runAsync(
 					`INSERT OR REPLACE INTO user_profile 
-           (id, experience_points, last_synced, needs_sync, updated_at)
-           VALUES (?, ?, ?, 0, ?)`, // needs_sync is 0 because it's from Supabase
-					[data.id, data.experience_points, data.last_synced, data.updated_at],
+           (id, first_name, last_name, experience_points, date_of_birth, gender, height_inches, 
+					 weight_lbs, last_synced, needs_sync, updated_at, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`, // needs_sync is 0 because it's from Supabase
+					[
+						data.id,
+						data.first_name,
+						data.last_name,
+						data.experience_points,
+						data.date_of_birth,
+						data.gender,
+						data.height_inches,
+						data.weight_lbs,
+						data.last_synced,
+						data.updated_at,
+						data.created_at,
+					],
 				)
 				console.log('Successfully updated local profile')
 			}
@@ -88,9 +102,66 @@ export class SyncService {
 	}
 
 	/**
-	 * Update local profile (instant UI feedback)
+	 * Update full profile locally and queue for sync
 	 */
-	async updateLocalProfile(userId: string, newXp: number, sync?: boolean): Promise<void> {
+	async updateProfile(userId: string, profile: ProfileUpdate): Promise<UserProfile> {
+		try {
+			const db = this.getDb()
+			const now = new Date().toISOString()
+
+			// Get current profile to merge with updates
+			const currentProfile = await this.getLocalProfile(userId)
+
+			// Merge current profile with updates
+			const updatedProfile: UserProfile = {
+				...currentProfile,
+				...profile,
+				id: userId,
+				updated_at: now,
+				needs_sync: 1,
+			}
+
+			// Update local database
+			await db.runAsync(
+				`UPDATE user_profile 
+       SET first_name = ?,
+           last_name = ?,
+           date_of_birth = ?,
+           gender = ?,
+           height_inches = ?,
+           weight_lbs = ?,
+           needs_sync = 1,
+           updated_at = ?
+       WHERE id = ?`,
+				[
+					updatedProfile.first_name,
+					updatedProfile.last_name,
+					updatedProfile.date_of_birth,
+					updatedProfile.gender,
+					updatedProfile.height_inches,
+					updatedProfile.weight_lbs,
+					now,
+					userId,
+				],
+			)
+
+			console.log('Updated local profile')
+
+			// Add to sync queue
+			await this.addToSyncQueue('profiles', 'update', updatedProfile)
+			await this.syncToSupabase(userId)
+
+			return updatedProfile
+		} catch (error) {
+			console.error('Error updating profile:', error)
+			throw error
+		}
+	}
+
+	/**
+	 * Update local profile XP(instant UI feedback)
+	 */
+	async updateLocalProfileXp(userId: string, newXp: number): Promise<void> {
 		try {
 			const db = this.getDb()
 			const now = new Date().toISOString() // For updated_at
@@ -103,18 +174,6 @@ export class SyncService {
          WHERE id = ?`,
 				[newXp, now, userId],
 			)
-
-			if (sync) {
-				// Queue for sync
-				await this.addToSyncQueue('profiles', 'update', {
-					id: userId,
-					experience_points: newXp,
-					updated_at: now, // Include updated_at for sync
-				})
-
-				// Try to sync immediately if online
-				this.syncToSupabase(userId)
-			}
 		} catch (error) {
 			console.error('Error updating local profile:', error)
 			throw error
@@ -195,6 +254,11 @@ export class SyncService {
 				.select('experience_points')
 				.eq('id', userId)
 				.single()
+
+			if (error) {
+				console.error('Error fetching user XP:', error)
+				return
+			}
 			let newXp = data.experience_points
 
 			for (const sync of pendingSyncs) {
@@ -206,9 +270,14 @@ export class SyncService {
 							const { error } = await this.supabase
 								.from('profiles')
 								.update({
+									first_name: data.first_name,
+									last_name: data.last_name,
+									date_of_birth: data.date_of_birth,
+									gender: data.gender,
+									height_inches: data.height_inches,
+									weight_lbs: data.weight_lbs,
 									experience_points: data.experience_points,
-									level: data.level,
-									updated_at: data.updated_at, // Use data's updated_at
+									updated_at: data.updated_at,
 								})
 								.eq('id', data.id)
 
@@ -218,13 +287,12 @@ export class SyncService {
 
 								// Update local needs_sync flag
 								await db.runAsync(
-									'UPDATE user_profile SET needs_sync = 0, last_synced = ?, updated_at = ? WHERE id = ?',
-									[new Date().toISOString(), data.updated_at, data.id], // Use data's updated_at for local updated_at
+									'UPDATE user_profile SET needs_sync = 0, last_synced = ? WHERE id = ?',
+									[new Date().toISOString(), data.id],
 								)
 								console.log(`Synced profile: ${data.id}`)
 							} else {
 								console.error(`Error syncing profile ${data.id}:`, error)
-								// Optionally, you might want to retry or mark as failed after several attempts
 							}
 						}
 						break
