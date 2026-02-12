@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"typeRoots": ["./src/@types", "./node_modules/@types"],
+		"paths": {
+			"@components/*": ["src/components/*"],
+			"@screens/*": ["src/screens/*"],
+			"@app/*": ["src/app/*"],
+			"@utils/*": ["src/utils/*"],
+			"@hooks/*": ["src/hooks/*"],
+			"@contexts/*": ["src/contexts/*"],
+			"@server/*": ["src/server/*"],
+			"@services/*": ["src/server/services/*"],
+			"@constants/*": ["src/constants/*"],
+			"@assets/*": ["assets/*"]
+		}
+	},
+	"include": ["./src"],
+	"exclude": ["./node_modules"],
+	"extends": "expo/tsconfig.base"
+}

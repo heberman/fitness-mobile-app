@@ -1,0 +1,22 @@
+module.exports = {
+	preset: 'jest-expo',
+	testEnvironment: 'node',
+	roots: ['<rootDir>'],
+	testMatch: ['**/__tests__/**/*.test.ts'],
+	moduleNameMapper: {
+		'^@/(.*)$': '<rootDir>/src/$1',
+		'^~/(.*)$': '<rootDir>/src/$1',
+		'^@components/(.*)$': '<rootDir>/src/components/$1',
+		'^@screens/(.*)$': '<rootDir>/src/screens/$1',
+		'^@app/(.*)$': '<rootDir>/src/app/$1',
+		'^@utils/(.*)$': '<rootDir>/src/utils/$1',
+		'^@hooks/(.*)$': '<rootDir>/src/hooks/$1',
+		'^@contexts/(.*)$': '<rootDir>/src/contexts/$1',
+		'^@server/(.*)$': '<rootDir>/src/server/$1',
+		'^@services/(.*)$': '<rootDir>/src/server/services/$1',
+		'^@constants/(.*)$': '<rootDir>/src/constants/$1',
+		'^@assets/(.*)$': '<rootDir>/assets/$1',
+	},
+	testPathIgnorePatterns: ['/node_modules/'],
+	setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+}
